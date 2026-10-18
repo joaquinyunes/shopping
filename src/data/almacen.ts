@@ -6,12 +6,14 @@ export const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL ?? '';
 export const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_KEY ?? '';
 /** Sin variables de Supabase la tienda funciona en modo demo: los cambios quedan solo en este navegador. */
 export const hayNube = Boolean(SUPABASE_URL && SUPABASE_KEY);
+/** Nombres con prefijo: el proyecto de Supabase puede compartirse con otros sitios. */
+export const TABLA = 'casanido_tienda', BUCKET = 'casanido';
 
 const CLAVE_LOCAL = 'casa-nido:tienda';
 
 /** Lectura pública por REST: no hace falta el SDK de Supabase para mostrar la tienda. */
 async function cargarDeLaNube(): Promise<Datos | null> {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/tienda?id=eq.1&select=datos`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}?id=eq.1&select=datos`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) throw new Error(`Supabase respondió ${r.status}`);
