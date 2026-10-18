@@ -13,6 +13,7 @@ npm run lint
 ```
 
 - Admin: `http://localhost:5500/#/admin`. Sin Supabase funciona en modo demo (los cambios quedan en ese navegador).
+- En el viaje 3D, los objetos que flotan y las tarjetas rebotan al tocarlos (o al pasar el mouse se marcan).
 - Si tu Windows tiene "reducir movimiento" activado, la web arranca en el hero estático. Para ver el viaje 3D: botón "Activar viaje 3D".
 
 ## Fotos
@@ -30,5 +31,5 @@ Las fotos de producto son provisorias, generadas con IA (Gemini) y recortadas co
 ## Pendiente / sin verificar
 
 - No probado en un celular real ni dentro del navegador de Instagram.
-- No se corrió `npm run build` ni el admin conectado a Supabase.
+- `npm run build`, tests y lint pasan (2026-10-18). Falta probar el admin conectado a Supabase.
 - `_viejo/` tiene la versión anterior (se puede borrar).
