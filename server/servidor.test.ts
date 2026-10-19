@@ -56,6 +56,7 @@ describe('cors', () => {
     const b = respuesta();
     expect(cors(pedido({ origin: 'https://malo.example' }), b.res)).toBe(false);
     expect(b.h['Access-Control-Allow-Origin']).toBeUndefined();
+    expect(b.h['Vary']).toBe('Origin');
   });
 });
 

@@ -9,10 +9,8 @@ const origenes = () => (process.env.ORIGENES_PERMITIDOS ?? 'https://casa-nido.on
 /** Pone los encabezados CORS y responde el preflight; devuelve true si el pedido ya quedó resuelto. */
 export function cors(req: Req, res: Res): boolean {
   const origen = req.headers.origin;
-  if (origen && origenes().includes(origen)) {
-    res.setHeader('Access-Control-Allow-Origin', origen);
-    res.setHeader('Vary', 'Origin');
-  }
+  res.setHeader('Vary', 'Origin'); // siempre: sin esto la caché de Vercel reparte la respuesta de un origen a otro
+  if (origen && origenes().includes(origen)) res.setHeader('Access-Control-Allow-Origin', origen);
   res.setHeader('Access-Control-Allow-Headers', 'content-type, x-admin-clave');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
   if (req.method !== 'OPTIONS') return false;
