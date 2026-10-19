@@ -5,7 +5,7 @@ import { DATOS_INICIALES } from './seed';
 describe('fotoSegura', () => {
   it('acepta rutas propias, https y data:image', () => {
     expect(fotoSegura('/img/productos/taza.webp')).toBe('/img/productos/taza.webp');
-    expect(fotoSegura('https://x.supabase.co/a.jpg')).toBe('https://x.supabase.co/a.jpg');
+    expect(fotoSegura('https://x.vercel.app/api/foto?id=a')).toBe('https://x.vercel.app/api/foto?id=a');
     expect(fotoSegura('data:image/jpeg;base64,AAAA')).toBe('data:image/jpeg;base64,AAAA');
   });
   it('rechaza esquemas peligrosos o ajenos', () => {

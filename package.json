@@ -8,19 +8,20 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src scripts",
+    "lint": "eslint src scripts api server",
     "test": "vitest run",
     "recortar": "node scripts/recortar.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
     "gsap": "^3.15.0",
+    "mongodb": "~6.7.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.186.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",

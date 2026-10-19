@@ -44,3 +44,6 @@
 ---
 Juicio en una sola sala: un mismo modelo hizo todos los papeles.
 Este tribunal es una simulación: ordena los argumentos, no reemplaza probar la idea con personas reales.
+
+## Apelación · 2026-10-19 — la base pasa de Supabase a MongoDB Atlas
+El usuario cambió el dato que faltaba: usará MongoDB Atlas. Cambia la condición del jurado 10: la base ya no tiene API propia lista para el navegador, así que hace falta un backend chico. Decisión: funciones de Vercel (`api/`) con el driver `mongodb` 6.7, clave de admin por variable de entorno y fotos en la misma base. Se mantienen las condiciones: el toque no roba el scroll (ya probado), la base queda conectada antes de dar el sitio por terminado (pendiente: `MONGODB_URI` y `ADMIN_PASSWORD` en Vercel) y probar en celular real (sigue sin hacerse). Riesgo nuevo: Atlas debe aceptar `0.0.0.0/0` porque Vercel no tiene IP fija. No se repitió el juicio completo; es un cambio de implementación, no de idea.

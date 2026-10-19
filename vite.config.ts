@@ -7,5 +7,5 @@ export default defineConfig({
   server: { port: 5500, host: true },
   // three y gsap solo se importan desde el hero 3D (React.lazy / import()), así que quedan fuera del bundle inicial.
   build: { target: 'es2022' },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: { environment: 'node', include: ['src/**/*.test.ts', 'server/**/*.test.ts'] },
 });

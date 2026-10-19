@@ -32,7 +32,7 @@ function normalizarProducto(raw: unknown): Producto | null {
   };
 }
 
-/** Todo lo que viene de afuera (Supabase, localStorage) pasa por acá antes de usarse. */
+/** Todo lo que viene de afuera (la API, localStorage) pasa por acá antes de usarse. */
 export function normalizarDatos(raw: unknown): Datos {
   const base = DATOS_INICIALES.tienda;
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;

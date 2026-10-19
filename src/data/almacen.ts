@@ -2,23 +2,19 @@ import type { Datos } from '../tipos';
 import { normalizarDatos } from './normalizar';
 import { DATOS_INICIALES } from './seed';
 
-export const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL ?? '';
-export const SUPABASE_KEY: string = import.meta.env.VITE_SUPABASE_KEY ?? '';
-/** Sin variables de Supabase la tienda funciona en modo demo: los cambios quedan solo en este navegador. */
-export const hayNube = Boolean(SUPABASE_URL && SUPABASE_KEY);
-/** Nombres con prefijo: el proyecto de Supabase puede compartirse con otros sitios. */
-export const TABLA = 'casanido_tienda', BUCKET = 'casanido';
+/** Dirección de la API (MongoDB Atlas detrás). Vacía = el mismo sitio; la copia en Render apunta a Vercel. */
+export const API_URL: string = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+/** En producción hay API; en desarrollo la tienda funciona en modo demo: los cambios quedan solo en este navegador. */
+export const hayNube = import.meta.env.PROD || Boolean(API_URL);
 
 const CLAVE_LOCAL = 'casa-nido:tienda';
 
-/** Lectura pública por REST: no hace falta el SDK de Supabase para mostrar la tienda. */
+/** Lectura pública: `null` si la dueña todavía no guardó nada (se usan los datos iniciales). */
 async function cargarDeLaNube(): Promise<Datos | null> {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLA}?id=eq.1&select=datos`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!r.ok) throw new Error(`Supabase respondió ${r.status}`);
-  const [fila] = (await r.json()) as Array<{ datos: unknown }>;
-  return fila ? normalizarDatos(fila.datos) : null;
+  const r = await fetch(`${API_URL}/api/tienda`);
+  if (!r.ok) throw new Error(`La API respondió ${r.status}`);
+  const datos: unknown = await r.json();
+  return datos ? normalizarDatos(datos) : null;
 }
 
 export async function cargarDatos(): Promise<Datos> {

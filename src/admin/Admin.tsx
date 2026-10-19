@@ -3,30 +3,35 @@ import { borrarLocal, cargarDatos, guardarLocal, hayNube } from '../data/almacen
 import { DATOS_INICIALES } from '../data/seed';
 import type { Datos, Producto, Tienda } from '../tipos';
 import { AdminProducto } from './AdminProducto';
-import { crearCliente, guardarEnNube, subirFotoANube, type ClienteNube } from './nube';
+import { entrar, guardarEnNube, subirFotoANube } from './nube';
 import { achicarFoto, blobComoDataUrl } from './subir-foto';
 
 type EstadoSesion = 'cargando' | 'login' | 'listo';
 
+/** La clave vive solo en esta pestaña (sessionStorage): al cerrarla hay que volver a entrar. */
+const CLAVE_SESION = 'casa-nido:clave';
+const leerClave = () => { try { return sessionStorage.getItem(CLAVE_SESION); } catch { return null; } };
+const guardarClave = (c: string | null) => { try { if (c) sessionStorage.setItem(CLAVE_SESION, c); else sessionStorage.removeItem(CLAVE_SESION); } catch { /* sin storage */ } };
+
 /** Panel para la dueña: pensado para usarse desde el celular, con letra grande y un solo botón de guardar. */
 export default function Admin() {
   const [sesion, setSesion] = useState<EstadoSesion>(hayNube ? 'cargando' : 'listo');
-  const [cliente, setCliente] = useState<ClienteNube | null>(null);
+  const [clave, setClave] = useState('');
   const [datos, setDatos] = useState<Datos | null>(null);
   const [cambios, setCambios] = useState(false);
   const [mensaje, setMensaje] = useState('Sin cambios');
   const [error, setError] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState<string | null>(null);
 
-  // Con Supabase: ¿ya hay sesión iniciada?
+  // Con la API: ¿la clave guardada en esta pestaña sigue valiendo?
   useEffect(() => {
     if (!hayNube) return;
     let vigente = true;
-    crearCliente().then(async c => {
-      const { data } = await c.auth.getSession();
+    const guardada = leerClave();
+    (guardada ? entrar(guardada) : Promise.resolve(false)).then(ok => {
       if (!vigente) return;
-      setCliente(c);
-      setSesion(data.session ? 'listo' : 'login');
+      if (ok) setClave(guardada!);
+      setSesion(ok ? 'listo' : 'login');
     }).catch(() => { if (vigente) { setError('No se pudo conectar con la base de datos.'); setSesion('login'); } });
     return () => { vigente = false; };
   }, []);
@@ -69,7 +74,7 @@ export default function Admin() {
     setError(null);
     try {
       const blob = await achicarFoto(archivo, hayNube ? 1000 : 700);
-      const url = hayNube && cliente ? await subirFotoANube(cliente, blob) : await blobComoDataUrl(blob);
+      const url = hayNube ? await subirFotoANube(clave, blob) : await blobComoDataUrl(blob);
       editarProducto(id, { foto: url });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar la foto. Probá con otra.');
@@ -83,24 +88,26 @@ export default function Admin() {
     setMensaje('Guardando…');
     setError(null);
     try {
-      if (hayNube && cliente) await guardarEnNube(cliente, datos);
+      if (hayNube) await guardarEnNube(clave, datos);
       else guardarLocal(datos);
       setCambios(false);
       setMensaje('Guardado ✓');
     } catch (e) {
       const cuota = e instanceof DOMException && e.name === 'QuotaExceededError';
-      setError(cuota ? 'No entra en el modo demo: usá fotos más chicas o conectá Supabase.' : 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
+      setError(cuota ? 'No entra en el modo demo: usá fotos más chicas o conectá la base de datos.' : 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
       setMensaje('Tenés cambios sin guardar');
     }
   };
 
   const iniciarSesion = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!cliente) return;
-    const f = new FormData(e.currentTarget);
-    const { error: err } = await cliente.auth.signInWithPassword({ email: String(f.get('email')), password: String(f.get('clave')) });
-    if (err) setError('Email o contraseña incorrectos.');
-    else { setError(null); setSesion('listo'); }
+    const intento = String(new FormData(e.currentTarget).get('clave'));
+    try {
+      if (await entrar(intento)) { guardarClave(intento); setClave(intento); setError(null); setSesion('listo'); }
+      else setError('Contraseña incorrecta.');
+    } catch {
+      setError('No se pudo conectar. Revisá la conexión y probá de nuevo.');
+    }
   };
 
   const categorias = useMemo(() => [...new Set([...(datos?.productos.map(p => p.categoria) ?? []), ...DATOS_INICIALES.productos.map(p => p.categoria)])], [datos]);
@@ -112,7 +119,6 @@ export default function Admin() {
       <main className="admin admin-login">
         <form className="admin-tarjeta" onSubmit={iniciarSesion}>
           <h1>Entrar al admin</h1>
-          <label>Email<input type="email" name="email" autoComplete="username" required /></label>
           <label>Contraseña<input type="password" name="clave" autoComplete="current-password" required /></label>
           <button className="btn btn-primario btn-grande" type="submit">Entrar</button>
           {error && <p className="admin-error" role="alert">{error}</p>}
@@ -132,14 +138,14 @@ export default function Admin() {
       </div>
       {!hayNube && (
         <p className="admin-aviso">
-          Modo demo: los cambios se guardan solo en este navegador. Para que los vean tus clientas, conectá Supabase (ver LEEME.md).{' '}
+          Modo demo: los cambios se guardan solo en este navegador. Para que los vean tus clientas, conectá la base de datos (ver LEEME.md).{' '}
           <button type="button" className="admin-link" onClick={() => { if (confirm('¿Volver a los datos de ejemplo?')) { borrarLocal(); setDatos(structuredClone(DATOS_INICIALES)); setCambios(false); setMensaje('Datos de ejemplo restaurados'); } }}>
             Restaurar ejemplo
           </button>
         </p>
       )}
-      {hayNube && cliente && (
-        <button type="button" className="admin-link" onClick={async () => { await cliente.auth.signOut(); setSesion('login'); }}>Cerrar sesión</button>
+      {hayNube && (
+        <button type="button" className="admin-link" onClick={() => { guardarClave(null); setClave(''); setSesion('login'); }}>Cerrar sesión</button>
       )}
 
       <h2>Tu tienda</h2>
