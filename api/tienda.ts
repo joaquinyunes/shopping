@@ -7,7 +7,7 @@ interface Fila { _id: number; datos: unknown; actualizado: Date }
 export default ruta(async (req, res) => {
   if (req.method === 'GET') {
     const fila = await (await coleccion<Fila>('tienda')).findOne({ _id: 1 });
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10');
+    res.setHeader('Cache-Control', 'no-store'); // sin caché de borde: Vercel no separa por Origin y se perdería el encabezado CORS
     return json(res, 200, fila?.datos ?? null);
   }
   if (req.method !== 'PUT') return json(res, 405, { error: 'Método no permitido' });
