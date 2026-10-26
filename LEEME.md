@@ -28,7 +28,8 @@ La tienda es estática y una API chica (`api/`, funciones de Vercel) habla con M
 2. En Vercel → proyecto → Settings → Environment Variables (Production), cargar:
    - `MONGODB_URI`: la cadena de conexión de Atlas (con el usuario y la contraseña de la base).
    - `ADMIN_PASSWORD`: la contraseña que usará la dueña en `/#/admin`.
-   - Opcional: `MONGODB_DB` (por defecto `casanido`) y `ORIGENES_PERMITIDOS` (sitios que pueden usar la API desde otro dominio; por defecto `https://casa-nido.onrender.com`).
+   - `ORIGENES_PERMITIDOS`: sitios que pueden usar la API desde otro dominio, separados por coma (la copia en Render: `https://casa-nido.onrender.com`). Sin ella, solo el mismo sitio.
+   - Opcional: `MONGODB_DB` (por defecto `casanido`).
 3. Redeploy. Entrar a `/#/admin`, cambiar el WhatsApp y guardar una vez.
 4. La copia en Render es estática: su variable `VITE_API_URL` apunta a la API de Vercel (`https://casa-nido.vercel.app`).
 

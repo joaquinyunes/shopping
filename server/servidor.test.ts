@@ -49,7 +49,17 @@ describe('cors', () => {
     const h: Record<string, string> = {};
     return { h, res: { setHeader: (k: string, v: string) => { h[k] = v; }, end() {}, statusCode: 0 } as unknown as Res };
   };
+  const origenesAntes = process.env.ORIGENES_PERMITIDOS;
+  afterEach(() => { if (origenesAntes === undefined) delete process.env.ORIGENES_PERMITIDOS; else process.env.ORIGENES_PERMITIDOS = origenesAntes; });
+
+  it('sin ORIGENES_PERMITIDOS no abre ningún otro origen', () => {
+    delete process.env.ORIGENES_PERMITIDOS;
+    const a = respuesta();
+    expect(cors(pedido({ origin: 'https://casa-nido.onrender.com' }), a.res)).toBe(false);
+    expect(a.h['Access-Control-Allow-Origin']).toBeUndefined();
+  });
   it('deja pasar solo los orígenes permitidos y resuelve el preflight', () => {
+    process.env.ORIGENES_PERMITIDOS = 'https://casa-nido.onrender.com';
     const a = respuesta();
     expect(cors(pedido({ origin: 'https://casa-nido.onrender.com' }, 'OPTIONS'), a.res)).toBe(true);
     expect(a.h['Access-Control-Allow-Origin']).toBe('https://casa-nido.onrender.com');

@@ -3,8 +3,8 @@ import type { IncomingMessage as Req, ServerResponse as Res } from 'node:http';
 
 export type { Req, Res };
 
-/** Sitios que pueden llamar a la API desde otro dominio (ej. la copia en Render). Mismo sitio no necesita nada. */
-const origenes = () => (process.env.ORIGENES_PERMITIDOS ?? 'https://casa-nido.onrender.com').split(',').map(s => s.trim()).filter(Boolean);
+/** Sitios que pueden llamar a la API desde otro dominio (ej. la copia en Render), separados por coma en ORIGENES_PERMITIDOS. Sin la variable, solo el mismo sitio. */
+const origenes = () => (process.env.ORIGENES_PERMITIDOS ?? '').split(',').map(s => s.trim()).filter(Boolean);
 
 /** Pone los encabezados CORS y responde el preflight; devuelve true si el pedido ya quedó resuelto. */
 export function cors(req: Req, res: Res): boolean {
