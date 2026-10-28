@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { borrarLocal, cargarDatos, guardarLocal, hayNube } from '../data/almacen';
 import { DATOS_INICIALES } from '../data/seed';
 import type { Datos, Producto, Tienda } from '../tipos';
+import { exportarCsv, importarCsv } from '../lib/tiendanube-csv';
+import { AdminPedidos } from './AdminPedidos';
 import { AdminProducto } from './AdminProducto';
 import { entrar, guardarEnNube, subirFotoANube } from './nube';
 import { achicarFoto, blobComoDataUrl } from './subir-foto';
@@ -22,6 +24,7 @@ export default function Admin() {
   const [mensaje, setMensaje] = useState('Sin cambios');
   const [error, setError] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState<string | null>(null);
+  const [informe, setInforme] = useState<string[]>([]);
 
   // Con la API: ¿la clave guardada en esta pestaña sigue valiendo?
   useEffect(() => {
@@ -67,6 +70,22 @@ export default function Admin() {
 
   const borrar = (p: Producto) => {
     if (confirm(`¿Borrar "${p.nombre}"?`)) modificar(d => ({ ...d, productos: d.productos.filter(x => x.id !== p.id) }));
+  };
+
+  const exportar = () => {
+    if (!datos) return;
+    const enlace = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([exportarCsv(datos.productos)], { type: 'text/csv;charset=utf-8' })), download: 'productos-casa-nido.csv',
+    });
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+  };
+
+  const importar = async (archivo: File) => {
+    if (!datos) return;
+    const r = importarCsv(await archivo.text(), datos.productos);
+    if (r.productos !== datos.productos) modificar(d => ({ ...d, productos: r.productos }));
+    setInforme([r.productos === datos.productos ? 'No se importó nada.' : `Planilla leída: ahora hay ${r.productos.length} productos. Revisá y tocá Guardar.`, ...r.errores, ...r.avisos]);
   };
 
   const cambiarFoto = async (id: string, archivo: File) => {
@@ -148,6 +167,8 @@ export default function Admin() {
         <button type="button" className="admin-link" onClick={() => { guardarClave(null); setClave(''); setSesion('login'); }}>Cerrar sesión</button>
       )}
 
+      {hayNube && <AdminPedidos clave={clave} />}
+
       <h2>Tu tienda</h2>
       <section className="admin-tarjeta admin-tienda">
         <label>Nombre<input value={datos.tienda.nombre} maxLength={40} onChange={e => editarTienda({ nombre: e.target.value })} /></label>
@@ -169,6 +190,16 @@ export default function Admin() {
         <h2>Productos ({datos.productos.length})</h2>
         <button type="button" className="btn btn-primario btn-chico" onClick={agregar}>+ Agregar producto</button>
       </div>
+      <div className="admin-acciones">
+        <button type="button" className="admin-link" onClick={exportar}>Descargar planilla (Tiendanube .csv)</button>
+        <label className="admin-link">
+          Cargar planilla .csv
+          <input type="file" accept=".csv,text/csv" hidden onChange={e => { const f = e.target.files?.[0]; if (f) importar(f); e.target.value = ''; }} />
+        </label>
+      </div>
+      {informe.length > 0 && (
+        <ul className="admin-informe" role="status">{informe.map((l, i) => <li key={i}>{l}</li>)}</ul>
+      )}
       {datos.productos.map(p => (
         <AdminProducto
           key={p.id} producto={p} categorias={categorias} subiendo={subiendo === p.id}

@@ -1,0 +1,98 @@
+import { describe, expect, it } from 'vitest';
+import { exportarCsv, importarCsv, leerCsv } from './tiendanube-csv';
+import type { Producto } from '../tipos';
+
+const p = (o: Partial<Producto>): Producto => ({ id: 'taza', nombre: 'Taza', categoria: 'Cocina', precio: 8500, foto: '/img/taza.webp', ...o });
+
+describe('leerCsv', () => {
+  it('maneja comillas, comas, saltos de línea, BOM y CRLF', () => {
+    const filas = leerCsv('﻿a,b\r\n"x, y","di ""hola""\nchau"\r\n');
+    expect(filas).toEqual([['a', 'b'], ['x, y', 'di "hola"\nchau']]);
+  });
+});
+
+describe('exportarCsv', () => {
+  const csv = exportarCsv([p({ stock: 3, sku: 'TZ-1', pesoGr: 350, descripcion: 'Esmalte, mate', categoria: 'Deco' })]);
+  const [cabeza, fila] = leerCsv(csv);
+  const col = (n: string) => fila[cabeza.indexOf(n)];
+
+  it('usa los encabezados de la plantilla de Tiendanube', () => {
+    for (const c of ['Identificador de URL', 'Nombre', 'Categorías', 'Precio', 'Peso', 'Stock', 'SKU', 'Mostrar en tienda', 'Descripción']) {
+      expect(cabeza).toContain(c);
+    }
+  });
+  it('escribe precio con punto, peso en kg y stock numérico', () => {
+    expect(col('Identificador de URL')).toBe('taza');
+    expect(col('Precio')).toBe('8500');
+    expect(col('Peso')).toBe('0.35');
+    expect(col('Stock')).toBe('3');
+    expect(col('SKU')).toBe('TZ-1');
+    expect(col('Descripción')).toBe('Esmalte, mate');
+    expect(col('Mostrar en tienda')).toBe('SI');
+  });
+  it('stock vacío = ilimitado; agotado manual sale con stock 0', () => {
+    const [h, a, b] = leerCsv(exportarCsv([p({}), p({ id: 'vela', agotado: true })]));
+    expect(a[h.indexOf('Stock')]).toBe('');
+    expect(b[h.indexOf('Stock')]).toBe('0');
+  });
+  it('si el id no es un identificador de URL válido, lo arma desde el nombre', () => {
+    const [h, f] = leerCsv(exportarCsv([p({ id: 'Id raro/ñ', nombre: 'Lámpara de Mesa' })]));
+    expect(f[h.indexOf('Identificador de URL')]).toBe('lampara-de-mesa');
+  });
+});
+
+describe('importarCsv', () => {
+  const base = [p({ id: 'taza', foto: '/img/taza.webp', tamanoCm: 9 })];
+  const encabezado = 'Identificador de URL,Nombre,Categorías,Precio,Peso,Stock,SKU,Mostrar en tienda,Descripción';
+
+  it('actualiza los existentes sin perder foto ni medidas, y crea los nuevos', () => {
+    const r = importarCsv(`${encabezado}\ntaza,Taza grande,Cocina,9000.50,0.4,5,TZ,SI,Nueva\nvela,Vela,Deco,7200,,,,SI,`, base);
+    expect(r.errores).toEqual([]);
+    expect(r.productos).toHaveLength(2);
+    expect(r.productos[0]).toMatchObject({ id: 'taza', nombre: 'Taza grande', precio: 9000.5, pesoGr: 400, stock: 5, sku: 'TZ', foto: '/img/taza.webp', tamanoCm: 9, descripcion: 'Nueva' });
+    expect(r.productos[1]).toMatchObject({ id: 'vela', nombre: 'Vela', categoria: 'Deco', precio: 7200, foto: '' });
+    expect(r.productos[1].stock).toBeUndefined();
+  });
+
+  it('en existentes, celda vacía = sin cambios; "-" en stock = ilimitado; 0 = agotado', () => {
+    const conStock = [p({ id: 'a', stock: 4 }), p({ id: 'b', stock: 4 }), p({ id: 'c', stock: 4 })];
+    const r = importarCsv(`Identificador de URL,Nombre,Precio,Stock\na,,,\nb,,,-\nc,,,0`, conStock);
+    expect(r.errores).toEqual([]);
+    expect(r.productos.find(x => x.id === 'a')!.stock).toBe(4);
+    expect(r.productos.find(x => x.id === 'b')!.stock).toBeUndefined();
+    expect(r.productos.find(x => x.id === 'c')!.stock).toBe(0);
+  });
+
+  it('reporta filas inválidas con su número y sigue con las demás', () => {
+    const r = importarCsv(`${encabezado}\n,Sin handle,Deco,100,,,,SI,\nnuevo,,Deco,100,,,,SI,\nmalo,Malo,Deco,abc,,,,SI,\nbien,Bien,Deco,100,,-1,,SI,`, []);
+    expect(r.productos.map(x => x.id)).toEqual([]);
+    expect(r.errores).toHaveLength(4);
+    expect(r.errores[0]).toMatch(/Fila 2/);
+  });
+
+  it('las filas de variantes se ignoran y se avisa', () => {
+    const r = importarCsv(`Identificador de URL,Nombre,Nombre de propiedad 1,Valor de propiedad 1,Precio,Stock\nalmohadon,Almohadón,Color,Rojo,100,2\nalmohadon,,Color,Azul,100,3`, []);
+    expect(r.productos).toHaveLength(1);
+    expect(r.productos[0].stock).toBe(2);
+    expect(r.avisos.join(' ')).toMatch(/variante/i);
+  });
+
+  it('avisa los productos ocultos en Tiendanube (no hay ocultos acá)', () => {
+    const r = importarCsv(`${encabezado}\nx,X,Deco,100,,,,NO,`, []);
+    expect(r.productos).toHaveLength(1);
+    expect(r.avisos.join(' ')).toMatch(/oculto/i);
+  });
+
+  it('sin la columna "Identificador de URL" no importa nada', () => {
+    const r = importarCsv('Nombre,Precio\nTaza,100', []);
+    expect(r.productos).toEqual([]);
+    expect(r.errores[0]).toMatch(/Identificador de URL/);
+  });
+
+  it('exportar e importar da lo mismo', () => {
+    const orig = [p({ stock: 2, sku: 'A', pesoGr: 120, descripcion: 'x, "y"' }), p({ id: 'vela', nombre: 'Vela', categoria: 'Deco', precio: 10.5, agotado: true })];
+    const r = importarCsv(exportarCsv(orig), orig);
+    expect(r.errores).toEqual([]);
+    expect(r.productos).toEqual(orig.map(o => ({ ...o, ...(o.agotado ? { stock: 0 } : {}) })));
+  });
+});

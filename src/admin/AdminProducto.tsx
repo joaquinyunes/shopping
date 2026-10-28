@@ -41,6 +41,14 @@ export function AdminProducto({ producto: p, categorias, subiendo, alCambiar, al
             <datalist id="categorias">{categorias.map(c => <option key={c} value={c} />)}</datalist>
           </label>
         </div>
+        <div className="admin-dos">
+          <label>Stock (vacío = sin límite)
+            <input inputMode="numeric" value={p.stock ?? ''} placeholder="ilimitado" onChange={e => { const n = parseInt(e.target.value, 10); alCambiar({ stock: Number.isFinite(n) ? Math.max(0, n) : undefined }); }} />
+          </label>
+          <label>SKU (código interno)
+            <input value={p.sku ?? ''} maxLength={40} onChange={e => alCambiar({ sku: e.target.value || undefined })} />
+          </label>
+        </div>
         <label className="admin-interruptor">
           <input type="checkbox" checked={!!p.agotado} onChange={e => alCambiar({ agotado: e.target.checked || undefined })} />
           Agotado

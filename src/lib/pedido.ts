@@ -16,11 +16,16 @@ export function totalDelCarrito(carrito: Carrito, productos: Producto[]) {
   return lineasDelCarrito(carrito, productos).reduce((s, l) => s + l.producto.precio * l.cant, 0);
 }
 
-export function armarMensaje(carrito: Carrito, productos: Producto[], tienda: Pick<Tienda, 'nombre'>): string | null {
+/** Lo que devuelve el servidor cuando el pedido quedó registrado: número, envío cotizado y total final. */
+export interface ExtraMensaje { numero?: number; envio?: { servicio: string; precio: number }; total?: number }
+
+export function armarMensaje(carrito: Carrito, productos: Producto[], tienda: Pick<Tienda, 'nombre'>, extra: ExtraMensaje = {}): string | null {
   const lineas = lineasDelCarrito(carrito, productos);
   if (!lineas.length) return null;
   const detalle = lineas.map(l => `• ${l.cant} x ${l.producto.nombre} — ${formatoPrecio(l.producto.precio * l.cant)}`).join('\n');
-  return `¡Hola ${tienda.nombre}! Quiero hacer este pedido:\n\n${detalle}\n\nTotal: ${formatoPrecio(totalDelCarrito(carrito, productos))}`;
+  const envio = extra.envio ? `\n${extra.envio.servicio}: ${extra.envio.precio ? formatoPrecio(extra.envio.precio) : 'gratis'}` : '';
+  const total = extra.total ?? totalDelCarrito(carrito, productos);
+  return `¡Hola ${tienda.nombre}! Quiero hacer este pedido${extra.numero ? ` (n.º ${extra.numero})` : ''}:\n\n${detalle}${envio}\n\nTotal: ${formatoPrecio(total)}`;
 }
 
 export const linkWhatsApp = (numero: string, texto: string) =>

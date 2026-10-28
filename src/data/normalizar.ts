@@ -4,6 +4,7 @@ import { DATOS_INICIALES } from './seed';
 const TIPOS: TipoMedida[] = ['alto', 'largo', 'ancho', 'diametro'];
 
 const texto = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+const entero = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : undefined);
 const positivo = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
 
 /** Una foto es una ruta propia, una URL https o una imagen subida (data:image). Nada de javascript: ni otros esquemas. */
@@ -19,12 +20,15 @@ function normalizarProducto(raw: unknown): Producto | null {
   const precio = typeof r.precio === 'number' && Number.isFinite(r.precio) ? Math.max(0, r.precio) : NaN;
   if (!id || !nombre || Number.isNaN(precio)) return null;
   const incluye = Array.isArray(r.incluye) ? r.incluye.map(i => texto(i, 60)).filter(Boolean).slice(0, 8) : undefined;
+  const stock = entero(r.stock);
   return {
     id, nombre, precio,
     categoria: texto(r.categoria, 30) || 'Otros',
     foto: fotoSegura(r.foto),
     descripcion: texto(r.descripcion, 160) || undefined,
-    agotado: r.agotado === true || undefined,
+    agotado: r.agotado === true || stock === 0 || undefined,
+    stock,
+    sku: texto(r.sku, 40) || undefined,
     tamanoCm: positivo(r.tamanoCm),
     tipoMedida: TIPOS.includes(r.tipoMedida as TipoMedida) ? (r.tipoMedida as TipoMedida) : undefined,
     pesoGr: positivo(r.pesoGr),

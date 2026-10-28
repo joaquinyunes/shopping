@@ -12,7 +12,7 @@ export function cors(req: Req, res: Res): boolean {
   res.setHeader('Vary', 'Origin'); // siempre: sin esto la caché de Vercel reparte la respuesta de un origen a otro
   if (origen && origenes().includes(origen)) res.setHeader('Access-Control-Allow-Origin', origen);
   res.setHeader('Access-Control-Allow-Headers', 'content-type, x-admin-clave');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, OPTIONS');
   if (req.method !== 'OPTIONS') return false;
   res.statusCode = 204;
   res.end();
@@ -35,6 +35,19 @@ export function esAdmin(req: Req): boolean {
 
 export class CuerpoGrande extends Error {}
 
+/** Error con estado HTTP y un mensaje pensado para mostrarse (nunca detalles internos). */
+export class ErrorHttp extends Error {
+  constructor(readonly estado: number, mensaje: string) { super(mensaje); }
+}
+
+/** Cuerpo JSON del pedido; 400 si no es JSON. */
+export async function leerJson(req: Req, max: number): Promise<unknown> {
+  try { return JSON.parse((await leerCuerpo(req, max)).toString('utf8')); } catch (e) {
+    if (e instanceof SyntaxError) throw new ErrorHttp(400, 'JSON inválido');
+    throw e;
+  }
+}
+
 /** Lee el cuerpo del pedido y corta si pasa de `max` bytes. */
 export async function leerCuerpo(req: Req, max: number): Promise<Buffer> {
   const partes: Buffer[] = [];
@@ -54,6 +67,7 @@ export function ruta(f: (req: Req, res: Res) => Promise<void>) {
     try {
       await f(req, res);
     } catch (error) {
+      if (error instanceof ErrorHttp) return json(res, error.estado, { error: error.message });
       if (error instanceof CuerpoGrande) return json(res, 413, { error: 'Archivo demasiado grande' });
       console.error(error);
       json(res, 500, { error: 'Error del servidor' });

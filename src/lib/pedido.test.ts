@@ -15,6 +15,13 @@ describe('pedido', () => {
     expect(msg).not.toContain('Vela');
   });
 
+  it('si el pedido quedó registrado, el mensaje lleva número, envío y el total del servidor', () => {
+    const msg = armarMensaje({ taza: 1 }, productos, { nombre: 'Casa Nido' }, { numero: 7, envio: { servicio: 'Envío a domicilio', precio: 4500 }, total: 13000 })!;
+    expect(msg).toContain('(n.º 7)');
+    expect(msg).toContain('Envío a domicilio: $4.500');
+    expect(msg).toContain('Total: $13.000');
+  });
+
   it('un carrito vacío o solo con agotados no arma mensaje', () => {
     expect(armarMensaje({}, productos, { nombre: 'X' })).toBeNull();
     expect(armarMensaje({ vela: 2 }, productos, { nombre: 'X' })).toBeNull();

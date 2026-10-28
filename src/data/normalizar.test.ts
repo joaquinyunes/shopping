@@ -47,4 +47,18 @@ describe('normalizarDatos', () => {
   it('una lista vacía de productos es válida (la tienda puede estar vacía)', () => {
     expect(normalizarDatos({ productos: [] }).productos).toEqual([]);
   });
+
+  it('stock entero >= 0 (negativo = 0, vacío o texto = ilimitado) y SKU; con stock 0 el producto queda agotado', () => {
+    const [a, b, c, d] = normalizarDatos({ productos: [
+      { id: 'a', nombre: 'A', precio: 1, stock: 4.9, sku: '  AB-1 ' },
+      { id: 'b', nombre: 'B', precio: 1, stock: 0 },
+      { id: 'c', nombre: 'C', precio: 1, stock: -3 },
+      { id: 'd', nombre: 'D', precio: 1, stock: 'mucho' },
+    ] }).productos;
+    expect(a).toMatchObject({ stock: 4, sku: 'AB-1' });
+    expect(a.agotado).toBeUndefined();
+    expect(b).toMatchObject({ stock: 0, agotado: true });
+    expect(c.stock).toBe(0);
+    expect(d.stock).toBeUndefined();
+  });
 });

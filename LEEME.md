@@ -22,6 +22,8 @@ Las fotos de producto son provisorias, generadas con IA (Gemini) y recortadas co
 
 ## Publicarla (Vercel + MongoDB Atlas)
 
+Variables de entorno, colecciones y rutas de la API: `docs/DEPLOY.md`. Qué cubre el panel frente a Tiendanube: `docs/BACKOFFICE.md`. (Lo que sigue es el resumen original; si difiere, manda `docs/DEPLOY.md`.)
+
 La tienda es estática y una API chica (`api/`, funciones de Vercel) habla con MongoDB Atlas (driver `mongodb` 6.7). Colecciones: `tienda` (una fila con todo el catálogo) y `fotos` (las imágenes que sube la dueña, servidas desde `/api/foto?id=…`).
 
 1. En Atlas → Network Access, permitir `0.0.0.0/0` (Vercel no tiene IP fija). La seguridad la da el usuario/contraseña de la base.
