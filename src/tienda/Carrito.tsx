@@ -70,7 +70,7 @@ export function Carrito({ abierto, alCerrar, datos, carrito, lineas, total, alCa
         <button type="button" className="cerrar" onClick={alCerrar} aria-label="Cerrar">✕</button>
       </div>
       <ul className="carrito-lista">
-        {lineas.length === 0 && <li className="vacio">Todavía no agregaste nada.</li>}
+        {lineas.length === 0 && <li className="vacio">Tu pedido está vacío. Sumá productos desde el catálogo.</li>}
         {lineas.map(({ producto, cant }) => (
           <li key={producto.id}>
             {producto.foto ? <img src={producto.foto} alt="" /> : <span className="sin-foto" />}

@@ -24,7 +24,7 @@ export default function App() {
     return () => { vigente = false; };
   }, [admin]); // al volver del admin se relee lo que se guardó
 
-  if (admin) return <Suspense fallback={<p className="cargando">Cargando…</p>}><Admin /></Suspense>;
+  if (admin) return <Suspense fallback={<p className="cargando" role="status">Cargando…</p>}><Admin /></Suspense>;
   if (!datos) return <p className="cargando" role="status">Cargando la tienda…</p>;
   return <Tienda datos={datos} />;
 }
