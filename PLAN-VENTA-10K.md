@@ -27,7 +27,7 @@ Lo que se ve hoy: portada oscura, titular serif enorme, tarjetas de producto inc
 - [ ] 👤 **9** Credenciales de correos (Resend) y Mercado Pago — al final.
 
 ## C. Seguridad (de `..\PLAN-VENTA-10K.md` §3)
-- [x] S2 CSP a «bloquear» (cuidado: 3D, cámara y fuentes) · [x] S3 rate limit en `/api/pedidos` y login admin · [x] S4 2FA del panel · [x] S5 sanear operadores `$` y límites de subida de fotos · [x] S7 registro de auditoría de precios/stock · [x] S8 gitleaks del historial · [x] S10 backup + restauración · [x] S11 Dependabot sin deploys bloqueados · [x] S12 privacidad y términos · [x] S13 `docs/SEGURIDAD.md`
+- [x] S2 CSP a «bloquear» (cuidado: 3D, cámara y fuentes) · [x] S3 rate limit en `/api/pedidos` y login admin · [x] S4 2FA del panel · [x] S5 sanear operadores `$` y límites de subida de fotos · [x] S7 registro de auditoría de precios/stock · [x] S8 gitleaks del historial · [x] S10 backup + restauración · [x] S11 Dependabot sin deploys bloqueados · [ ] S12 privacidad y términos (hecho: exportar/borrar datos y borradores legales; falta la revisión del abogado 👤) · [x] S13 `docs/SEGURIDAD.md`
 - (S1 ya está: 0 vulnerabilidades)
 
 ## D. Vendible (de `..\PLAN-VENTA-10K.md` §4)
