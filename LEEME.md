@@ -6,7 +6,8 @@ Vite + React + TypeScript. three.js y GSAP solo se cargan si hay viaje 3D. Acta 
 
 ```
 npm install
-npm run dev      # http://localhost:5500
+npm run dev      # http://localhost:5500 (modo demo, sin servidor)
+npm run dev:api  # http://localhost:5501 con la API real y un MongoDB local (admin: clave dev-casa-nido)
 npm test         # tests de funciones puras
 npm run typecheck
 npm run lint
@@ -42,3 +43,4 @@ La cámara "Ver en tu mesa" exige https. Las fotos viejas no se borran al reempl
 - No probado en un celular real ni dentro del navegador de Instagram.
 - `npm run build`, tests y lint pasan (2026-10-18). Falta probar el admin conectado a Atlas (hacen falta `MONGODB_URI` y `ADMIN_PASSWORD` en Vercel).
 - `_viejo/` tiene la versión anterior (se puede borrar).
+- Estado al 03/11/2026 (variantes, ofertas, avisos, vencimiento de pedidos, qué se probó y qué no): `docs/MEJORAS-Y-ESTADO.md`.
