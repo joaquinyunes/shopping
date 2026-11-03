@@ -1,0 +1,32 @@
+name: Respaldo semanal de la base
+# Requiere el secreto MONGODB_URI (y MONGODB_DB si no es "casanido") en Settings > Secrets > Actions: lo carga la dueña, no está en el repo.
+# El archivo tiene datos personales de clientas: el repositorio tiene que ser privado y el artefacto dura 30 días.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Respaldar
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+        run: node scripts/backup.mjs backups
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-casa-nido
+          path: backups/*.ndjson.gz
+          retention-days: 30
+          if-no-files-found: error

@@ -1,0 +1,6 @@
+# Cómo avisar de una vulnerabilidad de Casa Nido (RFC 9116).
+# COMPLETAR antes de publicar: poné un mail real que lea una persona. Si queda este valor, el archivo no sirve.
+Contact: mailto:seguridad@COMPLETAR-DOMINIO
+Expires: 2027-11-03T00:00:00.000Z
+Preferred-Languages: es, en
+Policy: https://casa-nido.vercel.app/privacidad.html

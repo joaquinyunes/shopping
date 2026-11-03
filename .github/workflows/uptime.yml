@@ -1,0 +1,28 @@
+name: Aviso si el sitio se cae
+# Cada 15 minutos entra a /api/salud y a la portada. Si falla, GitHub manda mail a quien mira el repo (Settings > Notifications).
+# Variables del repo (Settings > Variables > Actions): SITIO_URL (ej. https://casa-nido.vercel.app) y, opcional, SITIO_COPIA_URL (la copia en Render).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mirar:
+    runs-on: ubuntu-latest
+    if: ${{ vars.SITIO_URL != '' }}
+    steps:
+      - name: Revisar sitio y API
+        env:
+          SITIO: ${{ vars.SITIO_URL }}
+          COPIA: ${{ vars.SITIO_COPIA_URL }}
+        run: |
+          fallo=0
+          for url in "$SITIO/" "$SITIO/api/salud" ${COPIA:+"$COPIA/"}; do
+            codigo=$(curl -s -o /dev/null -m 30 -w '%{http_code}' --retry 2 --retry-delay 5 "$url" || echo 000)
+            echo "$url -> $codigo"
+            [ "$codigo" = "200" ] || fallo=1
+          done
+          exit $fallo

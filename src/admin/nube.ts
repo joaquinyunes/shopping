@@ -4,14 +4,42 @@ import type { Datos, EstadoPedido, PedidoRegistrado } from '../tipos';
 /** Texto para quien administra: sin jerga de API, con qué hacer. */
 const msgHttp = (estado: number) => `No se pudo completar la acción (error ${estado}). Probá de nuevo en un momento.`;
 
-const cabeza = (clave: string) => ({ 'x-admin-clave': clave });
+/** Lo que se manda en cada pedido del panel: la sesión (un token), nunca la contraseña. */
+const cabeza = (sesion: string) => ({ Authorization: `Bearer ${sesion}` });
 
-/** ¿Es correcta la clave? Lanza solo si la API no responde bien (no si la clave está mal). */
-export async function entrar(clave: string): Promise<boolean> {
-  const r = await fetch(`${API_URL}/api/login`, { method: 'POST', headers: cabeza(clave) });
-  if (r.status === 401) return false;
+/** ¿Pide código de la app? ¿Sigue vigente la sesión guardada en esta pestaña? */
+export async function estadoDeSesion(sesion?: string): Promise<{ dosPasos: boolean; sesion: boolean }> {
+  const r = await fetch(`${API_URL}/api/login`, { headers: sesion ? cabeza(sesion) : {} });
   if (!r.ok) throw new Error(msgHttp(r.status));
-  return true;
+  return r.json();
+}
+
+/** Devuelve la sesión, o `null` si la contraseña o el código están mal. Lanza con el mensaje de la API si está bloqueado (429) o no responde. */
+export async function entrar(clave: string, codigo?: string): Promise<string | null> {
+  const r = await fetch(`${API_URL}/api/login`, { method: 'POST', headers: { 'x-admin-clave': clave, ...(codigo && { 'x-admin-codigo': codigo }) } });
+  if (r.status === 401) return null;
+  if (!r.ok) throw await fallo(r);
+  return ((await r.json()) as { token: string }).token;
+}
+
+/** Cierra la sesión en todos los dispositivos (también en este). */
+export async function cerrarTodasLasSesiones(sesion: string): Promise<void> {
+  const r = await fetch(`${API_URL}/api/login`, { method: 'DELETE', headers: cabeza(sesion) });
+  if (!r.ok) throw await fallo(r);
+}
+
+/** Derecho de acceso y de supresión de una persona (por mail o teléfono). Devuelve el archivo a entregar o la cantidad anonimizada. */
+export async function datosDePersona(sesion: string, accion: 'exportar' | 'borrar', persona: { email?: string; telefono?: string }): Promise<{ pedidos?: unknown[]; anonimizados?: number }> {
+  const r = await fetch(`${API_URL}/api/datos`, { method: 'POST', headers: { ...cabeza(sesion), 'Content-Type': 'application/json' }, body: JSON.stringify({ accion, ...persona }) });
+  if (!r.ok) throw await fallo(r);
+  return r.json();
+}
+
+export interface EventoAuditoria { creado: string; tipo: string; cambios: Array<{ producto?: string; campo: string; antes?: unknown; despues?: unknown }> }
+export async function listarAuditoria(sesion: string): Promise<EventoAuditoria[]> {
+  const r = await fetch(`${API_URL}/api/auditoria`, { headers: cabeza(sesion) });
+  if (!r.ok) throw await fallo(r);
+  return r.json();
 }
 
 /** El catálogo cambió en el servidor desde que se abrió el panel (entró un pedido o se guardó desde otro lado). */

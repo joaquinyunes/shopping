@@ -24,14 +24,24 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       - run: npm run build
+      # Falla si una dependencia de producción tiene vulnerabilidad alta o crítica
+      - run: npm audit --omit=dev --audit-level=high
 
   secretos:
     name: Escaneo de secretos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # todo el historial, no solo el último commit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Buscar en todo el historial
+        run: node scripts/escanear-secretos.mjs
       # Busca formas de claves reales en los archivos versionados. Imprime solo
       # archivo, línea y tipo: nunca el valor. Si falla, rotar la clave antes de borrarla.
       - name: Buscar patrones de secretos

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Binary } from 'mongodb';
-import { coleccion } from '../server/db.js';
+import { coleccion, conexion } from '../server/db.js';
 import { tipoDeImagen } from '../server/foto.js';
-import { esAdmin, json, leerCuerpo, ruta } from '../server/http.js';
+import { exigirAdmin } from '../server/auth.js';
+import { json, leerCuerpo, ruta } from '../server/http.js';
+import { limitar } from '../server/limites.js';
 
 interface Foto { _id: string; tipo: string; data: Binary; creado: Date }
 
@@ -18,7 +20,9 @@ export default ruta(async (req, res) => {
     return;
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'Método no permitido' });
-  if (!esAdmin(req)) return json(res, 401, { error: 'Clave incorrecta' });
+  const { db } = await conexion();
+  await exigirAdmin(req, db);
+  await limitar(db, 'subida-fotos', 60, 3_600_000, 'Subiste muchas fotos seguidas. Esperá un rato.');
 
   const bytes = await leerCuerpo(req, 3_000_000);
   const tipo = tipoDeImagen(bytes);

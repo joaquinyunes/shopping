@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { MongoClient } from 'mongodb';
 import { hayMongod, levantarReplicaSet } from './mongo-local';
 import type { Req, Res } from './http';
+import { codigoDePaso, generarSecreto, pasoDe } from './totp';
 
 // Pruebas de las funciones de api/ contra un MongoDB real (replica set local de un nodo). Se saltean si no hay binario de mongod.
 const conMongo = hayMongod() ? describe : describe.skip;
@@ -20,7 +21,7 @@ async function llamar(handler: Handler, metodo: string, cuerpo?: unknown, header
 conMongo('api/ contra MongoDB con replica set', () => {
   let mongo: Awaited<ReturnType<typeof levantarReplicaSet>>;
   let raw: MongoClient;
-  let pedido: Handler, pedidos: Handler, envio: Handler, tienda: Handler, login: Handler, vencer: Handler, csp: Handler;
+  let pedido: Handler, pedidos: Handler, envio: Handler, tienda: Handler, login: Handler, vencer: Handler, csp: Handler, foto: Handler, auditoria: Handler, datos: Handler;
   const admin = { 'x-admin-clave': 'clave-de-prueba' };
 
   const catalogo = () => ({
@@ -51,18 +52,23 @@ conMongo('api/ contra MongoDB con replica set', () => {
     ({ default: login } = await import('../api/login'));
     ({ default: vencer } = await import('../api/vencer'));
     ({ default: csp } = await import('../api/csp'));
+    ({ default: foto } = await import('../api/foto'));
+    ({ default: auditoria } = await import('../api/auditoria'));
+    ({ default: datos } = await import('../api/datos'));
   }, 60_000);
 
   afterAll(async () => { await raw?.close(); await mongo?.parar(); });
 
   beforeEach(async () => {
     const db = raw.db('casanido_test');
-    await Promise.all(['pedidos', 'contadores', 'tienda'].map(c => db.collection(c).deleteMany({})));
+    await Promise.all(['pedidos', 'contadores', 'tienda', 'limites', 'ajustes', 'auditoria'].map(c => db.collection(c).deleteMany({})));
     expect((await llamar(tienda, 'PUT', catalogo(), admin)).estado).toBe(200);
   });
 
   it('login y catálogo: la clave manda y el GET es público', async () => {
-    expect((await llamar(login, 'POST', undefined, admin)).estado).toBe(204);
+    const entrada = await llamar(login, 'POST', undefined, admin);
+    expect(entrada.estado).toBe(200);
+    expect(entrada.cuerpo.token).toMatch(/^\d+\.\d+\.[\w-]+$/);
     expect((await llamar(tienda, 'PUT', catalogo(), { 'x-admin-clave': 'mala' })).estado).toBe(401);
     expect((await llamar(tienda, 'GET')).cuerpo.productos).toHaveLength(3);
   });
@@ -288,5 +294,133 @@ conMongo('api/ contra MongoDB con replica set', () => {
     expect((await llamar(csp, 'POST', { 'csp-report': { 'violated-directive': 'img-src', 'blocked-uri': 'https://x.test/a.png' } })).estado).toBe(204);
     expect((await llamar(csp, 'POST', '{roto')).estado).toBe(204);
     expect((await llamar(csp, 'GET')).estado).toBe(405);
+  });
+
+  describe('seguridad del panel (sesión, bloqueo, segundo paso)', () => {
+    const entrar = (extra: Record<string, string> = {}, ip = '198.51.100.9') =>
+      llamar(login, 'POST', undefined, { 'x-admin-clave': 'clave-de-prueba', 'x-forwarded-for': ip, ...extra });
+    const conSesion = (token: string) => ({ authorization: `Bearer ${token}` });
+    afterEach(() => { delete process.env.ADMIN_TOTP_SECRET; });
+
+    it('la clave da una sesión que vale en los endpoints del panel; una sesión inventada o alterada no', async () => {
+      const { token } = (await entrar()).cuerpo;
+      expect((await llamar(pedidos, 'GET', undefined, conSesion(token))).estado).toBe(200);
+      expect((await llamar(login, 'GET', undefined, conSesion(token))).cuerpo).toEqual({ dosPasos: false, sesion: true });
+      expect((await llamar(login, 'GET')).cuerpo).toEqual({ dosPasos: false, sesion: false });
+      const alterado = token.replace(/\.\d+\./, '.99999999999999.');
+      expect((await llamar(pedidos, 'GET', undefined, conSesion(alterado))).estado).toBe(401);
+      expect((await llamar(pedidos, 'GET', undefined, conSesion('1.2.3'))).estado).toBe(401);
+    });
+
+    it('5 fallos bloquean 15 minutos al origen (también si adivina por otros endpoints); otro origen no', async () => {
+      for (let i = 0; i < 5; i++) expect((await llamar(pedidos, 'GET', undefined, { 'x-admin-clave': `mala-${i}`, 'x-forwarded-for': '203.0.113.50' })).estado).toBe(401);
+      expect((await llamar(pedidos, 'GET', undefined, { ...admin, 'x-forwarded-for': '203.0.113.50' })).estado).toBe(429); // ni con la clave buena
+      expect((await entrar({}, '203.0.113.50')).estado).toBe(429);
+      expect((await entrar({}, '203.0.113.51')).estado).toBe(200);
+    });
+
+    it('cerrar todas las sesiones corta las anteriores; una nueva sí vale', async () => {
+      const vieja = (await entrar()).cuerpo.token as string;
+      expect((await llamar(login, 'DELETE', undefined, conSesion(vieja))).estado).toBe(204);
+      expect((await llamar(pedidos, 'GET', undefined, conSesion(vieja))).estado).toBe(401);
+      await new Promise(r => setTimeout(r, 5));
+      expect((await llamar(pedidos, 'GET', undefined, conSesion((await entrar()).cuerpo.token))).estado).toBe(200);
+    });
+
+    it('con segundo paso: la clave sola no entra (ni por la cabecera vieja); con el código sí, una sola vez', async () => {
+      const secreto = generarSecreto();
+      process.env.ADMIN_TOTP_SECRET = secreto;
+      expect((await llamar(login, 'GET')).cuerpo.dosPasos).toBe(true);
+      expect((await entrar()).estado).toBe(401);
+      expect((await llamar(pedidos, 'GET', undefined, admin)).estado).toBe(401);
+      const codigo = codigoDePaso(secreto, pasoDe(Date.now()));
+      expect((await entrar({ 'x-admin-codigo': '000000' }, '198.51.100.20')).estado).toBe(401);
+      const ok = await entrar({ 'x-admin-codigo': codigo }, '198.51.100.21');
+      expect(ok.estado).toBe(200);
+      expect((await llamar(pedidos, 'GET', undefined, conSesion(ok.cuerpo.token))).estado).toBe(200);
+      expect((await entrar({ 'x-admin-codigo': codigo }, '198.51.100.22')).estado).toBe(401); // el mismo código no se reusa
+    });
+  });
+
+  describe('límites de frecuencia, entradas con operadores y subidas', () => {
+    it('cotizar envíos: la consulta 61 de la hora desde el mismo origen es 429', async () => {
+      const cot = () => llamar(envio, 'POST', { cp: '1425', items: [{ id: 'libre', cant: 1 }] }, { 'x-forwarded-for': '203.0.113.99' });
+      for (let i = 0; i < 60; i++) expect((await cot()).estado).toBe(200);
+      expect((await cot()).estado).toBe(429);
+    });
+
+    it('operadores de Mongo en cualquier campo son 400 y no llegan a la base', async () => {
+      expect((await llamar(pedido, 'POST', { items: [{ id: { $ne: null }, cant: 1 }], cliente: { nombre: 'Ana' } })).estado).toBe(400);
+      expect((await llamar(pedido, 'POST', { items: [{ id: 'libre', cant: 1 }], cliente: { nombre: 'Ana', $where: '1' } })).estado).toBe(400);
+      expect((await llamar(pedidos, 'PATCH', { numero: { $gt: 0 }, estado: 'pagado' }, admin)).estado).toBe(400);
+      expect((await llamar(tienda, 'PUT', { tienda: {}, productos: [{ id: 'x', nombre: 'X', precio: { $gt: 0 } }], _v: 1 }, admin)).estado).toBe(400);
+      expect((await llamar(tienda, 'PUT', { tienda: { 'a.b': 1 }, productos: [], _v: 1 }, admin)).estado).toBe(400);
+    });
+
+    it('subir fotos: solo imagen real y hasta 3 MB, aunque el archivo diga ser otra cosa', async () => {
+      expect((await llamar(foto, 'POST', '<svg onload=alert(1)>', admin)).estado).toBe(400);
+      expect((await llamar(foto, 'POST', 'x'.repeat(3_000_001), admin)).estado).toBe(413);
+      expect((await llamar(foto, 'POST', 'GIF89a', admin)).estado).toBe(400);
+      expect((await llamar(foto, 'POST', 'abc')).estado).toBe(401);
+    });
+  });
+
+  describe('registro de auditoría', () => {
+    it('queda quién cambió precio y stock, y los estados de pedidos; solo la dueña lo ve y no tiene rutas para borrarlo', async () => {
+      const v = (await llamar(tienda, 'GET')).cuerpo._v as number;
+      const nuevo = catalogo();
+      nuevo.productos[0] = { ...nuevo.productos[0], precio: 9000, stock: 10 };
+      nuevo.productos.pop(); // se borra «libre»
+      expect((await llamar(tienda, 'PUT', { ...nuevo, _v: v }, admin)).estado).toBe(200);
+      await comprar([{ id: 'taza', cant: 1 }]);
+      await llamar(pedidos, 'PATCH', { numero: 1, estado: 'pagado' }, admin);
+
+      expect((await llamar(auditoria, 'GET')).estado).toBe(401);
+      expect((await llamar(auditoria, 'POST', {}, admin)).estado).toBe(405);
+      const lista = (await llamar(auditoria, 'GET', undefined, admin)).cuerpo as Array<{ tipo: string; cambios: Array<{ producto: string; campo: string; antes?: unknown; despues?: unknown }>; origen?: string }>;
+      expect(lista.map(e => e.tipo)).toEqual(['pedido', 'catalogo', 'catalogo']); // el más nuevo primero; el último es la carga de beforeEach
+      expect(lista[0].cambios).toEqual([{ producto: 'pedido 1', campo: 'estado', antes: 'pendiente', despues: 'pagado' }]);
+      expect(lista[1].cambios).toEqual(expect.arrayContaining([
+        { producto: 'taza', campo: 'precio', antes: 8500, despues: 9000 },
+        { producto: 'taza', campo: 'stock', antes: 3, despues: 10 },
+        { producto: 'libre', campo: 'baja', antes: 100 },
+      ]));
+      expect(lista[0].origen).toBeUndefined(); // no se expone la huella
+    });
+  });
+
+  describe('privacidad: ver y borrar los datos de una persona (Ley 25.326)', () => {
+    const pedirComo = (cliente: object) => llamar(pedido, 'POST', { items: [{ id: 'libre', cant: 1 }], cliente });
+    const accion = (cuerpo: object, headers: Record<string, string> = admin) => llamar(datos, 'POST', cuerpo, headers);
+
+    it('exportar devuelve sus pedidos; borrar los anonimiza sin tocar montos ni los pedidos de otras personas', async () => {
+      await pedirComo({ nombre: 'Ana', email: 'ana@correo.test', telefono: '1155550000' });
+      await pedirComo({ nombre: 'Ana', telefono: '11 5555-0000' }); // mismo teléfono, sin mail
+      await pedirComo({ nombre: 'Beto', email: 'beto@correo.test' });
+
+      const vistos = (await accion({ accion: 'exportar', email: 'ANA@correo.test' })).cuerpo.pedidos;
+      expect(vistos).toHaveLength(1);
+      expect((await accion({ accion: 'exportar', telefono: '1155550000' })).cuerpo.pedidos).toHaveLength(2);
+      expect(vistos[0].cliente).toMatchObject({ nombre: 'Ana', email: 'ana@correo.test' });
+
+      expect((await accion({ accion: 'borrar', telefono: '1155550000' })).cuerpo).toEqual({ anonimizados: 2 });
+      const todos = (await llamar(pedidos, 'GET', undefined, admin)).cuerpo as Array<{ cliente: { nombre: string; email?: string; telefono?: string }; total: number }>;
+      expect(todos.map(p => p.cliente.nombre).sort()).toEqual(['Beto', 'Datos borrados a pedido', 'Datos borrados a pedido']);
+      expect(todos.every(p => p.total === 100)).toBe(true);
+      expect(JSON.stringify(todos.filter(p => p.cliente.nombre !== 'Beto'))).not.toMatch(/ana@|1155550000/);
+      expect((await accion({ accion: 'exportar', telefono: '1155550000' })).cuerpo.pedidos).toHaveLength(0);
+
+      const reg = JSON.stringify((await llamar(auditoria, 'GET', undefined, admin)).cuerpo);
+      expect(reg).toContain('datos personales borrados a pedido');
+      expect(reg).not.toMatch(/ana@|1155550000/); // la auditoría no guarda el dato que se borró
+    });
+
+    it('solo la dueña; pide mail o teléfono de texto; acción válida', async () => {
+      expect((await accion({ accion: 'exportar', email: 'a@b.test' }, {})).estado).toBe(401);
+      expect((await accion({ accion: 'exportar' })).estado).toBe(400);
+      expect((await accion({ accion: 'exportar', email: { $ne: '' } })).estado).toBe(400);
+      expect((await accion({ accion: 'inventada', email: 'a@b.test' })).estado).toBe(400);
+      expect((await llamar(datos, 'GET', undefined, admin)).estado).toBe(405);
+    });
   });
 });

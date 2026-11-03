@@ -22,7 +22,7 @@ export function Pie({ tienda }: { tienda: Tienda }) {
           <p><a href={linkWhatsApp(tienda.whatsapp, `¡Hola ${tienda.nombre}! Quería hacer una consulta.`)} target="_blank" rel="noopener noreferrer">Escribinos por WhatsApp</a></p>
         </div>
       </div>
-      <p className="pie-chico"><a href="#/admin">Admin</a></p>
+      <p className="pie-chico"><a href="/privacidad.html">Privacidad</a> · <a href="/terminos.html">Términos</a> · <a href="#/admin">Admin</a></p>
     </footer>
   );
 }

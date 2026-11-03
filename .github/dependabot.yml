@@ -1,0 +1,16 @@
+# Actualizaciones agrupadas y semanales: un solo PR por grupo, para no llenar de ramas ni de deploys.
+# Vercel no despliega las ramas dependabot/* (ver "ignoreCommand" en vercel.json); el CI sí las prueba.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday, time: "09:00", timezone: America/Argentina/Buenos_Aires }
+    open-pull-requests-limit: 3
+    groups:
+      produccion: { dependency-type: production }
+      desarrollo: { dependency-type: development }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      acciones: { patterns: ["*"] }

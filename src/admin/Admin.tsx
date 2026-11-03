@@ -8,20 +8,23 @@ import type { Datos, Producto, Tienda } from '../tipos';
 import { exportarCsv, importarCsv } from '../lib/tiendanube-csv';
 import { AdminPedidos } from './AdminPedidos';
 import { AdminProducto } from './AdminProducto';
-import { CatalogoDesactualizado, entrar, guardarEnNube, subirFotoANube } from './nube';
+import { AdminAuditoria } from './AdminAuditoria';
+import { AdminDatos } from './AdminDatos';
+import { CatalogoDesactualizado, cerrarTodasLasSesiones, entrar, estadoDeSesion, guardarEnNube, subirFotoANube } from './nube';
 import { achicarFoto, blobComoDataUrl } from './subir-foto';
 
 type EstadoSesion = 'cargando' | 'login' | 'listo';
 
-/** La clave vive solo en esta pestaña (sessionStorage): al cerrarla hay que volver a entrar. */
-const CLAVE_SESION = 'casa-nido:clave';
+/** La sesión (un token que vence a las 8 horas) vive solo en esta pestaña (sessionStorage): al cerrarla hay que volver a entrar. La contraseña no se guarda. */
+const CLAVE_SESION = 'casa-nido:sesion';
 const leerClave = () => { try { return sessionStorage.getItem(CLAVE_SESION); } catch { return null; } };
 const guardarClave = (c: string | null) => { try { if (c) sessionStorage.setItem(CLAVE_SESION, c); else sessionStorage.removeItem(CLAVE_SESION); } catch { /* sin storage */ } };
 
 /** Panel para la dueña: pensado para usarse desde el celular, con letra grande y un solo botón de guardar. */
 export default function Admin() {
   const [sesion, setSesion] = useState<EstadoSesion>(hayNube ? 'cargando' : 'listo');
-  const [clave, setClave] = useState('');
+  const [clave, setClave] = useState(''); // la sesión, no la contraseña
+  const [pideCodigo, setPideCodigo] = useState(false);
   const [datos, setDatos] = useState<Datos | null>(null);
   const [cambios, setCambios] = useState(false);
   const [mensaje, setMensaje] = useState('Sin cambios');
@@ -30,13 +33,14 @@ export default function Admin() {
   const [informe, setInforme] = useState<string[]>([]);
   const [desactualizado, setDesactualizado] = useState(false);
 
-  // Con la API: ¿la clave guardada en esta pestaña sigue valiendo?
+  // Con la API: ¿la sesión guardada en esta pestaña sigue valiendo? (y ¿hay que pedir el código de la app?)
   useEffect(() => {
     if (!hayNube) return;
     let vigente = true;
     const guardada = leerClave();
-    (guardada ? entrar(guardada) : Promise.resolve(false)).then(ok => {
+    estadoDeSesion(guardada ?? undefined).then(({ dosPasos, sesion: ok }) => {
       if (!vigente) return;
+      setPideCodigo(dosPasos);
       if (ok) setClave(guardada!);
       setSesion(ok ? 'listo' : 'login');
     }).catch(() => { if (vigente) { setError('No se pudo conectar con la base de datos.'); setSesion('login'); } });
@@ -140,12 +144,13 @@ export default function Admin() {
 
   const iniciarSesion = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const intento = String(new FormData(e.currentTarget).get('clave'));
+    const f = new FormData(e.currentTarget);
     try {
-      if (await entrar(intento)) { guardarClave(intento); setClave(intento); setError(null); setSesion('listo'); }
-      else setError('Contraseña incorrecta.');
-    } catch {
-      setError('No se pudo conectar. Revisá la conexión y probá de nuevo.');
+      const token = await entrar(String(f.get('clave')), pideCodigo ? String(f.get('codigo')).trim() : undefined);
+      if (token) { guardarClave(token); setClave(token); setError(null); setSesion('listo'); }
+      else setError(pideCodigo ? 'La contraseña o el código no son correctos.' : 'Contraseña incorrecta.');
+    } catch (err) {
+      setError(err instanceof Error && err.message && !/^Failed|NetworkError|Load failed/i.test(err.message) ? err.message : 'No se pudo conectar. Revisá la conexión y probá de nuevo.');
     }
   };
 
@@ -159,6 +164,7 @@ export default function Admin() {
         <form className="admin-tarjeta" onSubmit={iniciarSesion}>
           <h1>Entrar al admin</h1>
           <label>Contraseña<input type="password" name="clave" autoComplete="current-password" required /></label>
+          {pideCodigo && <label>Código de la app (6 dígitos)<input name="codigo" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" required /></label>}
           <button className="btn btn-primario btn-grande" type="submit">Entrar</button>
           {error && <p className="admin-error" role="alert">{error}</p>}
           <a href="#/">← Volver a la tienda</a>
@@ -184,10 +190,18 @@ export default function Admin() {
         </p>
       )}
       {hayNube && (
-        <button type="button" className="admin-link" onClick={() => { guardarClave(null); setClave(''); setSesion('login'); }}>Cerrar sesión</button>
+        <div className="admin-acciones">
+          <button type="button" className="admin-link" onClick={() => { guardarClave(null); setClave(''); setSesion('login'); }}>Cerrar sesión</button>
+          <button
+            type="button" className="admin-link"
+            onClick={() => { if (confirm('Se cierra la sesión en todos tus dispositivos. ¿Seguro?')) cerrarTodasLasSesiones(clave).then(() => { guardarClave(null); setClave(''); setSesion('login'); }, e => setError(e instanceof Error ? e.message : 'No se pudo cerrar.')); }}
+          >Cerrar en todos los dispositivos</button>
+        </div>
       )}
 
       {hayNube && <AdminPedidos clave={clave} />}
+      {hayNube && <AdminAuditoria sesion={clave} />}
+      {hayNube && <AdminDatos sesion={clave} />}
 
       <h2>Tu tienda</h2>
       <section className="admin-tarjeta admin-tienda">

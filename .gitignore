@@ -5,3 +5,4 @@ dist
 _viejo
 .claude/settings.local.json
 *.log
+backups/

@@ -11,8 +11,8 @@ export function cors(req: Req, res: Res): boolean {
   const origen = req.headers.origin;
   res.setHeader('Vary', 'Origin'); // siempre: sin esto la caché de Vercel reparte la respuesta de un origen a otro
   if (origen && origenes().includes(origen)) res.setHeader('Access-Control-Allow-Origin', origen);
-  res.setHeader('Access-Control-Allow-Headers', 'content-type, x-admin-clave');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization, x-admin-clave, x-admin-codigo');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, DELETE, OPTIONS');
   if (req.method !== 'OPTIONS') return false;
   res.statusCode = 204;
   res.end();
@@ -40,12 +40,28 @@ export class ErrorHttp extends Error {
   constructor(readonly estado: number, mensaje: string) { super(mensaje); }
 }
 
-/** Cuerpo JSON del pedido; 400 si no es JSON. */
+/**
+ * ¿Hay claves que Mongo leería como operador (`$ne`, `$where`…) o como ruta (`a.b`)? Ningún dato legítimo las usa.
+ * Los campos se validan por tipo igual; esto corta de entrada un intento de inyección en cualquier endpoint nuevo.
+ */
+export function tieneOperadores(valor: unknown, profundidad = 0): boolean {
+  if (profundidad > 20) return true;
+  if (Array.isArray(valor)) return valor.some(v => tieneOperadores(v, profundidad + 1));
+  if (valor && typeof valor === 'object') return Object.entries(valor).some(([k, v]) => k.startsWith('$') || k.includes('.') || tieneOperadores(v, profundidad + 1));
+  return false;
+}
+
+/** Interpreta el cuerpo como JSON sin operadores de Mongo; 400 si no. */
+export function parsearJson(cuerpo: Buffer): unknown {
+  let valor: unknown;
+  try { valor = JSON.parse(cuerpo.toString('utf8')); } catch { throw new ErrorHttp(400, 'JSON inválido'); }
+  if (tieneOperadores(valor)) throw new ErrorHttp(400, 'Datos inválidos');
+  return valor;
+}
+
+/** Cuerpo JSON del pedido; 400 si no es JSON o trae operadores de Mongo. */
 export async function leerJson(req: Req, max: number): Promise<unknown> {
-  try { return JSON.parse((await leerCuerpo(req, max)).toString('utf8')); } catch (e) {
-    if (e instanceof SyntaxError) throw new ErrorHttp(400, 'JSON inválido');
-    throw e;
-  }
+  return parsearJson(await leerCuerpo(req, max));
 }
 
 /** Lee el cuerpo del pedido y corta si pasa de `max` bytes. */
