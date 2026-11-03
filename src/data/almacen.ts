@@ -9,12 +9,14 @@ export const hayNube = import.meta.env.PROD || Boolean(API_URL);
 
 const CLAVE_LOCAL = 'casa-nido:tienda';
 
-/** Lectura pública: `null` si la dueña todavía no guardó nada (se usan los datos iniciales). */
+/** Lectura pública: `null` si la dueña todavía no guardó nada (se usan los datos iniciales). Trae también la versión del catálogo (`_v`). */
 async function cargarDeLaNube(): Promise<Datos | null> {
   const r = await fetch(`${API_URL}/api/tienda`);
   if (!r.ok) throw new Error(`La API respondió ${r.status}`);
   const datos: unknown = await r.json();
-  return datos ? normalizarDatos(datos) : null;
+  if (!datos) return null;
+  const version = (datos as { _v?: unknown })._v;
+  return { ...normalizarDatos(datos), version: typeof version === 'number' ? version : 0 };
 }
 
 export async function cargarDatos(): Promise<Datos> {

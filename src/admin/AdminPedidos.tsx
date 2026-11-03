@@ -36,8 +36,8 @@ export function AdminPedidos({ clave }: { clave: string }) {
             <strong>#{p.numero} · {p.cliente.nombre}</strong>
             <span className={`pedido-estado pedido-${p.estado}`}>{p.estado}</span>
           </header>
-          <p className="admin-nota">{new Date(p.creado).toLocaleString('es-AR')}{p.cliente.cp && ` · CP ${p.cliente.cp}`}</p>
-          <ul>{p.items.map(i => <li key={i.id}>{i.cant} x {i.nombre} — {formatoPrecio(i.precio * i.cant)}</li>)}</ul>
+          <p className="admin-nota">{new Date(p.creado).toLocaleString('es-AR')}{p.cliente.cp && ` · CP ${p.cliente.cp}`}{p.cliente.email && ` · ${p.cliente.email}`}{p.historial?.at(-1)?.motivo === 'vencido' && ' · venció sin pago'}</p>
+          <ul>{p.items.map(i => <li key={`${i.id}/${i.variante?.id ?? ''}`}>{i.cant} x {i.nombre}{i.variante && ` (${i.variante.nombre})`} — {formatoPrecio(i.precio * i.cant)}</li>)}</ul>
           {p.envio && <p>{p.envio.servicio}: {p.envio.precio ? formatoPrecio(p.envio.precio) : 'gratis'}</p>}
           <p><strong>Total: {formatoPrecio(p.total)}</strong></p>
           <div className="admin-acciones">

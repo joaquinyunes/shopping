@@ -74,3 +74,10 @@ export function ruta(f: (req: Req, res: Res) => Promise<void>) {
     }
   };
 }
+
+/** IP de quien llama. En Vercel `x-forwarded-for` lo arma la plataforma (el primer valor es el cliente); sin él, la del socket. */
+export function ipDe(req: Req): string | undefined {
+  const reenviada = req.headers['x-forwarded-for'];
+  const primera = (Array.isArray(reenviada) ? reenviada[0] : reenviada)?.split(',')[0]?.trim();
+  return primera || req.socket?.remoteAddress || undefined;
+}

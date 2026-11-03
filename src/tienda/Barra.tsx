@@ -10,6 +10,7 @@ interface Props {
 export function Barra({ tienda, cuenta, alAbrirCarrito }: Props) {
   return (
     <header className="barra">
+      <a className="saltar" href="#catalogo">Saltar al catálogo</a>
       <a className="marca" href="#">
         <strong>{tienda.nombre}</strong>
         <span>{tienda.lema}</span>

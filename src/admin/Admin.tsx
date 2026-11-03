@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { borrarLocal, cargarDatos, guardarLocal, hayNube } from '../data/almacen';
+import { normalizarDatos } from '../data/normalizar';
+import { MAX_FOTOS_EXTRA } from '../data/producto';
 import { DATOS_INICIALES } from '../data/seed';
 import type { Datos, Producto, Tienda } from '../tipos';
 import { exportarCsv, importarCsv } from '../lib/tiendanube-csv';
 import { AdminPedidos } from './AdminPedidos';
 import { AdminProducto } from './AdminProducto';
-import { entrar, guardarEnNube, subirFotoANube } from './nube';
+import { CatalogoDesactualizado, entrar, guardarEnNube, subirFotoANube } from './nube';
 import { achicarFoto, blobComoDataUrl } from './subir-foto';
 
 type EstadoSesion = 'cargando' | 'login' | 'listo';
@@ -25,6 +27,7 @@ export default function Admin() {
   const [error, setError] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState<string | null>(null);
   const [informe, setInforme] = useState<string[]>([]);
+  const [desactualizado, setDesactualizado] = useState(false);
 
   // Con la API: ¿la clave guardada en esta pestaña sigue valiendo?
   useEffect(() => {
@@ -88,13 +91,14 @@ export default function Admin() {
     setInforme([r.productos === datos.productos ? 'No se importó nada.' : `Planilla leída: ahora hay ${r.productos.length} productos. Revisá y tocá Guardar.`, ...r.errores, ...r.avisos]);
   };
 
-  const cambiarFoto = async (id: string, archivo: File) => {
+  const cambiarFoto = async (id: string, archivo: File, comoExtra = false) => {
     setSubiendo(id);
     setError(null);
     try {
       const blob = await achicarFoto(archivo, hayNube ? 1000 : 700);
       const url = hayNube ? await subirFotoANube(clave, blob) : await blobComoDataUrl(blob);
-      editarProducto(id, { foto: url });
+      if (comoExtra) modificar(d => ({ ...d, productos: d.productos.map(p => (p.id === id ? { ...p, fotos: [...(p.fotos ?? []), url].slice(0, MAX_FOTOS_EXTRA) } : p)) }));
+      else editarProducto(id, { foto: url });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar la foto. Probá con otra.');
     } finally {
@@ -107,15 +111,30 @@ export default function Admin() {
     setMensaje('Guardando…');
     setError(null);
     try {
-      if (hayNube) await guardarEnNube(clave, datos);
-      else guardarLocal(datos);
+      if (hayNube) {
+        const version = await guardarEnNube(clave, datos);
+        setDatos(d => (d ? { ...normalizarDatos(d), version } : d)); // lo mismo que dejó el servidor: sin variantes incompletas ni ofertas inválidas
+      } else guardarLocal(datos);
       setCambios(false);
+      setDesactualizado(false);
       setMensaje('Guardado ✓');
     } catch (e) {
+      if (e instanceof CatalogoDesactualizado) {
+        setDesactualizado(true);
+        setError(e.message || 'La tienda cambió mientras editabas. Recargá para ver el stock actual.');
+        setMensaje('Tenés cambios sin guardar');
+        return;
+      }
       const cuota = e instanceof DOMException && e.name === 'QuotaExceededError';
       setError(cuota ? 'No entra en el modo demo: usá fotos más chicas o conectá la base de datos.' : 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
       setMensaje('Tenés cambios sin guardar');
     }
+  };
+
+  const recargar = () => {
+    if (cambios && !confirm('Se pierden los cambios que todavía no guardaste. ¿Recargar?')) return;
+    setDatos(null); setCambios(false); setDesactualizado(false); setError(null); setMensaje('Sin cambios');
+    cargarDatos().then(setDatos);
   };
 
   const iniciarSesion = async (e: FormEvent<HTMLFormElement>) => {
@@ -203,13 +222,15 @@ export default function Admin() {
       {datos.productos.map(p => (
         <AdminProducto
           key={p.id} producto={p} categorias={categorias} subiendo={subiendo === p.id}
-          alCambiar={c => editarProducto(p.id, c)} alBorrar={() => borrar(p)} alElegirFoto={f => cambiarFoto(p.id, f)}
+          alCambiar={c => editarProducto(p.id, c)} alBorrar={() => borrar(p)} alElegirFoto={f => cambiarFoto(p.id, f)} alElegirFotoExtra={f => cambiarFoto(p.id, f, true)}
         />
       ))}
 
       <div className="admin-barra">
         <span role="status">{error ?? mensaje}</span>
-        <button type="button" className="btn btn-primario btn-grande" onClick={guardar} disabled={!cambios}>Guardar</button>
+        {desactualizado
+          ? <button type="button" className="btn btn-grande" onClick={recargar}>Recargar tienda</button>
+          : <button type="button" className="btn btn-primario btn-grande" onClick={guardar} disabled={!cambios}>Guardar</button>}
       </div>
     </main>
   );

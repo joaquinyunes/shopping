@@ -14,11 +14,18 @@ export async function entrar(clave: string): Promise<boolean> {
   return true;
 }
 
-export async function guardarEnNube(clave: string, datos: Datos) {
+/** El catálogo cambió en el servidor desde que se abrió el panel (entró un pedido o se guardó desde otro lado). */
+export class CatalogoDesactualizado extends Error {}
+
+/** Guarda y devuelve la versión nueva; hay que mandar la que se leyó, así el servidor sabe si la copia quedó vieja. */
+export async function guardarEnNube(clave: string, datos: Datos): Promise<number> {
+  const { version, ...resto } = datos;
   const r = await fetch(`${API_URL}/api/tienda`, {
-    method: 'PUT', headers: { ...cabeza(clave), 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    method: 'PUT', headers: { ...cabeza(clave), 'Content-Type': 'application/json' }, body: JSON.stringify({ ...resto, _v: version ?? 0 }),
   });
+  if (r.status === 409) throw new CatalogoDesactualizado((await r.json().catch(() => ({})) as { error?: string }).error);
   if (!r.ok) throw new Error(msgHttp(r.status));
+  return ((await r.json()) as { _v: number })._v;
 }
 
 /** Sube la foto y devuelve su URL pública. */

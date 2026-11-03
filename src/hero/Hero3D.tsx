@@ -1,3 +1,4 @@
+import { precioVigente } from '../lib/catalogo';
 import { useMemo, useRef } from 'react';
 import { formatoPrecio, linkWhatsApp } from '../lib/pedido';
 import type { Datos } from '../tipos';
@@ -54,11 +55,11 @@ export default function Hero3D({ datos, limitado, alAgregar, alVerCategoria, alA
               <p className="sobre">{h.categoria}</p>
               <h2>{h.titulo}</h2>
               <p>{h.texto}</p>
-              <p className="hito-producto"><strong>{formatoPrecio(h.producto.precio)}</strong></p>
+              <p className="hito-producto"><strong>{formatoPrecio(precioVigente(h.producto))}</strong></p>
               <div className="hito-botones">
                 <a
                   className="btn btn-wpp btn-chico" target="_blank" rel="noopener noreferrer"
-                  href={linkWhatsApp(tienda.whatsapp, `¡Hola ${tienda.nombre}! Quiero pedir: ${h.producto.nombre} (${formatoPrecio(h.producto.precio)})`)}
+                  href={linkWhatsApp(tienda.whatsapp, `¡Hola ${tienda.nombre}! Quiero pedir: ${h.producto.nombre} (${formatoPrecio(precioVigente(h.producto))})`)}
                 >Pedir por WhatsApp</a>
                 <button type="button" className="btn btn-fantasma btn-chico" onClick={() => alVerCategoria(h.categoria)}>Ver {h.categoria} →</button>
               </div>

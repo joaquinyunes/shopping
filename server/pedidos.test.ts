@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { armarPedido, puedePasar, validarEntrada, type ProductoServidor } from './pedidos';
+import { armarPedido, puedePasar, validarEntrada, validarItems, type ProductoServidor } from './pedidos';
 
 const cat: ProductoServidor[] = [
   { id: 'taza', nombre: 'Taza', precio: 8500, stock: 5, pesoGr: 300 },
@@ -57,5 +57,37 @@ describe('puedePasar', () => {
     expect(puedePasar('entregado', 'pendiente')).toBe(false);
     expect(puedePasar('pendiente', 'enviado')).toBe(false);
     expect(puedePasar('pendiente', 'pendiente')).toBe(false);
+  });
+});
+
+
+describe('variantes, oferta y ocultos (puro)', () => {
+  const remera: ProductoServidor = {
+    id: 'remera', nombre: 'Remera', precio: 10000, precioPromo: 8000, propiedades: ['Talle'],
+    variantes: [{ id: 'm', valores: ['M'], stock: 2 }, { id: 'l', valores: ['L'], precio: 12000 }, { id: 's', valores: ['S'], stock: 0 }],
+  };
+  const catalogo2 = [remera, { id: 'oculta', nombre: 'Oculta', precio: 1, oculto: true }, { id: 'promo', nombre: 'Promo', precio: 1000, precioPromo: 700 }];
+  const armar = (items: Array<{ id: string; cant: number; variante?: string }>) => armarPedido(catalogo2, { items, cliente: { nombre: 'Ana' } });
+
+  it('cobra el precio de la variante, o la oferta del producto', () => {
+    expect(armar([{ id: 'remera', variante: 'm', cant: 2 }, { id: 'remera', variante: 'l', cant: 1 }, { id: 'promo', cant: 1 }]))
+      .toMatchObject({ subtotal: 16000 + 12000 + 700 });
+  });
+  it('exige variante, rechaza la agotada, la inexistente, la sobrante en producto simple y los ocultos', () => {
+    expect(armar([{ id: 'remera', cant: 1 }])).toMatch(/Elegí una opción/);
+    expect(armar([{ id: 'remera', variante: 's', cant: 1 }])).toMatch(/agotado/);
+    expect(armar([{ id: 'remera', variante: 'm', cant: 3 }])).toMatch(/stock suficiente.*quedan 2/);
+    expect(armar([{ id: 'remera', variante: 'xxl', cant: 1 }])).toMatch(/ya no existe/);
+    expect(armar([{ id: 'promo', variante: 'm', cant: 1 }])).toMatch(/ya no existe/);
+    expect(armar([{ id: 'oculta', cant: 1 }])).toMatch(/ya no existe/);
+  });
+  it('junta las líneas repetidas de la misma variante pero no las de variantes distintas', () => {
+    const r = validarItems([{ id: 'remera', variante: 'm', cant: 1 }, { id: 'remera', variante: 'm', cant: 2 }, { id: 'remera', variante: 'l', cant: 1 }]);
+    expect(r).toEqual([{ id: 'remera', variante: 'm', cant: 3 }, { id: 'remera', variante: 'l', cant: 1 }]);
+    expect(typeof validarItems([{ id: 'a', variante: '', cant: 1 }])).toBe('string');
+  });
+  it('el mail se normaliza y se valida', () => {
+    expect(validarEntrada({ items: [{ id: 'a', cant: 1 }], cliente: { nombre: 'x', email: ' ANA@Example.com ' } })).toMatchObject({ cliente: { email: 'ana@example.com' } });
+    expect(typeof validarEntrada({ items: [{ id: 'a', cant: 1 }], cliente: { nombre: 'x', email: 'ana@' } })).toBe('string');
   });
 });

@@ -70,17 +70,50 @@ describe('importarCsv', () => {
     expect(r.errores[0]).toMatch(/Fila 2/);
   });
 
-  it('las filas de variantes se ignoran y se avisa', () => {
-    const r = importarCsv(`Identificador de URL,Nombre,Nombre de propiedad 1,Valor de propiedad 1,Precio,Stock\nalmohadon,Almohadón,Color,Rojo,100,2\nalmohadon,,Color,Azul,100,3`, []);
+  it('las filas que repiten el identificador son variantes del mismo producto', () => {
+    const r = importarCsv(`Identificador de URL,Nombre,Precio,Precio promocional,Nombre de propiedad 1,Valor de propiedad 1,Nombre de propiedad 2,Valor de propiedad 2,Stock,SKU
+almohadon,Almohadón,100,80,Color,Rojo,Talle,M,2,AR
+almohadon,,100,,Color,Azul,Talle,L,3,
+almohadon,,150,,Color,Azul,Talle,S,-,AS`, []);
+    expect(r.errores).toEqual([]);
     expect(r.productos).toHaveLength(1);
-    expect(r.productos[0].stock).toBe(2);
-    expect(r.avisos.join(' ')).toMatch(/variante/i);
+    expect(r.productos[0]).toMatchObject({ precio: 100, precioPromo: 80, propiedades: ['Color', 'Talle'] });
+    expect(r.productos[0].stock).toBeUndefined();
+    expect(r.productos[0].variantes).toEqual([
+      { id: 'rojo-m', valores: ['Rojo', 'M'], stock: 2, sku: 'AR' },
+      { id: 'azul-l', valores: ['Azul', 'L'], stock: 3 },
+      { id: 'azul-s', valores: ['Azul', 'S'], precio: 150, sku: 'AS' },
+    ]);
   });
 
-  it('avisa los productos ocultos en Tiendanube (no hay ocultos acá)', () => {
-    const r = importarCsv(`${encabezado}\nx,X,Deco,100,,,,NO,`, []);
+  it('al reimportar variantes, la celda vacía conserva el stock y el precio propio', () => {
+    const con = [p({ id: 'remera', propiedades: ['Talle'], variantes: [{ id: 'm', valores: ['M'], stock: 5, precio: 9000 }, { id: 'l', valores: ['L'], stock: 1 }] })];
+    const r = importarCsv(`Identificador de URL,Nombre de propiedad 1,Valor de propiedad 1,Stock,Precio
+remera,Talle,M,,
+remera,Talle,L,7,`, con);
+    expect(r.errores).toEqual([]);
+    expect(r.productos[0].variantes).toEqual([{ id: 'm', valores: ['M'], stock: 5, precio: 9000 }, { id: 'l', valores: ['L'], stock: 7 }]);
+  });
+
+  it('una fila repetida sin propiedades se informa y no se toma', () => {
+    const r = importarCsv(`${encabezado}
+x,X,Deco,100,,,,SI,
+x,X,Deco,100,,,,SI,`, []);
     expect(r.productos).toHaveLength(1);
-    expect(r.avisos.join(' ')).toMatch(/oculto/i);
+    expect(r.errores.join(' ')).toMatch(/Fila 3/);
+  });
+
+  it('Mostrar en tienda = NO oculta el producto y SI lo vuelve a mostrar', () => {
+    const r = importarCsv(`${encabezado}
+x,X,Deco,100,,,,NO,
+y,Y,Deco,100,,,,SI,`, [p({ id: 'y', oculto: true })]);
+    expect(r.productos.find(x => x.id === 'x')!.oculto).toBe(true);
+    expect(r.productos.find(x => x.id === 'y')!.oculto).toBeUndefined();
+  });
+
+  it('precio promocional inválido es un error de esa fila', () => {
+    expect(importarCsv(`Identificador de URL,Nombre,Precio,Precio promocional
+x,X,100,barato`, []).errores[0]).toMatch(/promocional/);
   });
 
   it('sin la columna "Identificador de URL" no importa nada', () => {
@@ -94,5 +127,21 @@ describe('importarCsv', () => {
     const r = importarCsv(exportarCsv(orig), orig);
     expect(r.errores).toEqual([]);
     expect(r.productos).toEqual(orig.map(o => ({ ...o, ...(o.agotado ? { stock: 0 } : {}) })));
+  });
+
+  it('exportar e importar conserva variantes, oferta y ocultos', () => {
+    const orig = [
+      p({ id: 'remera', nombre: 'Remera', precio: 100, precioPromo: 80, oculto: true, propiedades: ['Talle', 'Color'], variantes: [
+        { id: 'm-rojo', valores: ['M', 'Rojo'], stock: 2, sku: 'MR' }, { id: 'l-azul', valores: ['L', 'Azul'], precio: 150 },
+      ] }),
+      p({ id: 'taza', precioPromo: 7000 }),
+    ];
+    const csv = exportarCsv(orig);
+    const filas = leerCsv(csv);
+    expect(filas).toHaveLength(4); // encabezado + 2 variantes + taza
+    expect(filas[2][filas[0].indexOf('Nombre')]).toBe(''); // la fila de variante no repite datos del producto
+    const r = importarCsv(csv, []);
+    expect(r.errores).toEqual([]);
+    expect(r.productos.map(({ foto: _f, ...resto }) => resto)).toEqual(orig.map(({ foto: _f, ...resto }) => resto)); // eslint-disable-line @typescript-eslint/no-unused-vars
   });
 });

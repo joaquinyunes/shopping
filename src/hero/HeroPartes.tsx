@@ -1,3 +1,4 @@
+import { precioVigente } from '../lib/catalogo';
 import { formatoPrecio, linkWhatsApp } from '../lib/pedido';
 import type { Producto, Tienda } from '../tipos';
 
@@ -26,7 +27,7 @@ export function TarjetaDestacada({ producto, alAgregar }: { producto: Producto; 
       <div>
         <p>Para empezar</p>
         <strong>{producto.nombre}</strong>
-        <span>{formatoPrecio(producto.precio)}</span>
+        <span>{formatoPrecio(precioVigente(producto))}</span>
       </div>
       <button type="button" className="btn btn-primario btn-chico" onClick={() => alAgregar(producto.id)}>Agregar</button>
     </div>

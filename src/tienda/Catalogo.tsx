@@ -6,7 +6,7 @@ interface Props {
   datos: Datos;
   filtro: string;
   alFiltrar: (categoria: string) => void;
-  alAgregar: (id: string) => void;
+  alAgregar: (id: string, varianteId?: string) => void;
 }
 
 export function Catalogo({ datos, filtro, alFiltrar, alAgregar }: Props) {
@@ -17,9 +17,9 @@ export function Catalogo({ datos, filtro, alFiltrar, alAgregar }: Props) {
   const hayFotosIlustrativas = productos.some(p => p.foto.startsWith('/img/productos/'));
 
   return (
-    <main id="catalogo" className="catalogo">
+    <section id="catalogo" className="catalogo" tabIndex={-1} aria-labelledby="titulo-catalogo">
       <div className="catalogo-cabeza">
-        <h2>Nuestros productos</h2>
+        <h2 id="titulo-catalogo">Nuestros productos</h2>
         <p>Elegí, sumá al pedido y mandanos todo junto por WhatsApp.</p>
         {hayFotosIlustrativas && <p className="aviso-ia">Imágenes ilustrativas generadas con IA: el producto real puede variar levemente.</p>}
       </div>
@@ -28,12 +28,13 @@ export function Catalogo({ datos, filtro, alFiltrar, alAgregar }: Props) {
           <button key={c} type="button" aria-pressed={c === filtro} onClick={() => alFiltrar(c)}>{c}</button>
         ))}
       </div>
-      <div className="grilla" aria-live="polite">
+      <p className="solo-lectores" role="status">{visibles.length === 1 ? '1 producto' : `${visibles.length} productos`}</p>
+      <div className="grilla">
         {visibles.map((p, i) => (
           <ProductoTarjeta key={p.id} producto={p} indice={i} conCamara={tienda.camara} alAgregar={alAgregar} />
         ))}
         {visibles.length === 0 && <p className="vacio-catalogo">Todavía no hay productos en esta categoría.</p>}
       </div>
-    </main>
+    </section>
   );
 }

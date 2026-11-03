@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { cargarImagen } from '../lib/cargar-imagen';
+import { precioVigente } from '../lib/catalogo';
 import { formatoPrecio } from '../lib/pedido';
 import { cajaDelContenido, quitarFondo, tieneBordeTransparente } from '../lib/quitar-fondo';
 import type { Producto } from '../tipos';
@@ -72,7 +73,7 @@ function dibujarTarjeta(producto: Producto, foto: HTMLCanvasElement): HTMLCanvas
   g.fillText(producto.categoria.toUpperCase(), 52, 618);
   g.fillStyle = hexCss(PALETA.tinta); g.font = '700 46px Fraunces, Georgia, serif';
   renglones(g, producto.nombre, W - 104).forEach((r, i) => g.fillText(r, 52, 676 + i * 52));
-  const precio = formatoPrecio(producto.precio);
+  const precio = formatoPrecio(precioVigente(producto));
   g.font = '800 40px Inter, system-ui, sans-serif';
   const pw = g.measureText(precio).width + 56;
   g.beginPath(); g.roundRect(52, 758, pw, 66, 33); g.fillStyle = hexCss(PALETA.terracota); g.fill();

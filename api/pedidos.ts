@@ -1,4 +1,5 @@
 import { conexion } from '../server/db.js';
+import { avisarPedido, vencerSiCorresponde } from '../server/avisar.js';
 import { ErrorHttp, esAdmin, json, leerJson, ruta } from '../server/http.js';
 import { cambiarEstado, ESTADOS, listarPedidos, salida, type EstadoPedido } from '../server/pedidos.js';
 
@@ -13,11 +14,14 @@ export default ruta(async (req, res) => {
   if (req.method === 'GET') {
     const estado = new URL(req.url ?? '', 'http://x').searchParams.get('estado') ?? undefined;
     if (estado !== undefined && !esEstado(estado)) throw new ErrorHttp(400, 'Estado inválido');
+    await vencerSiCorresponde(cx);
     res.setHeader('Cache-Control', 'no-store');
     return json(res, 200, (await listarPedidos(cx.db, estado)).map(salida));
   }
 
   const { numero, estado } = (await leerJson(req, 2_000) ?? {}) as Record<string, unknown>;
   if (typeof numero !== 'number' || !Number.isInteger(numero) || !esEstado(estado)) throw new ErrorHttp(400, 'Pedido o estado inválido');
-  json(res, 200, salida(await cambiarEstado(cx, numero, estado)));
+  const pedido = await cambiarEstado(cx, numero, estado);
+  if (estado !== 'pendiente') await avisarPedido(cx, estado, pedido); // reabrir no avisa
+  json(res, 200, salida(pedido));
 });

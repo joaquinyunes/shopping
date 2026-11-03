@@ -1,40 +1,10 @@
-import type { Datos, Producto, TipoMedida, Tienda } from '../tipos';
+import type { Datos, Producto, Tienda } from '../tipos';
+import { normalizarProducto } from './producto';
 import { DATOS_INICIALES } from './seed';
 
-const TIPOS: TipoMedida[] = ['alto', 'largo', 'ancho', 'diametro'];
+export { fotoSegura } from './producto';
 
 const texto = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const entero = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : undefined);
-const positivo = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
-
-/** Una foto es una ruta propia, una URL https o una imagen subida (data:image). Nada de javascript: ni otros esquemas. */
-export function fotoSegura(v: unknown): string {
-  const s = typeof v === 'string' ? v.trim() : '';
-  return /^(\/|https:\/\/|data:image\/(png|jpe?g|webp);base64,)/i.test(s) ? s : '';
-}
-
-function normalizarProducto(raw: unknown): Producto | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
-  const id = texto(r.id, 80), nombre = texto(r.nombre, 80);
-  const precio = typeof r.precio === 'number' && Number.isFinite(r.precio) ? Math.max(0, r.precio) : NaN;
-  if (!id || !nombre || Number.isNaN(precio)) return null;
-  const incluye = Array.isArray(r.incluye) ? r.incluye.map(i => texto(i, 60)).filter(Boolean).slice(0, 8) : undefined;
-  const stock = entero(r.stock);
-  return {
-    id, nombre, precio,
-    categoria: texto(r.categoria, 30) || 'Otros',
-    foto: fotoSegura(r.foto),
-    descripcion: texto(r.descripcion, 160) || undefined,
-    agotado: r.agotado === true || stock === 0 || undefined,
-    stock,
-    sku: texto(r.sku, 40) || undefined,
-    tamanoCm: positivo(r.tamanoCm),
-    tipoMedida: TIPOS.includes(r.tipoMedida as TipoMedida) ? (r.tipoMedida as TipoMedida) : undefined,
-    pesoGr: positivo(r.pesoGr),
-    incluye: incluye?.length ? incluye : undefined,
-  };
-}
 
 /** Todo lo que viene de afuera (la API, localStorage) pasa por acá antes de usarse. */
 export function normalizarDatos(raw: unknown): Datos {

@@ -29,6 +29,12 @@ button { cursor: pointer; }
 /* Foco con contraste: terracota sobre fondos claros, ámbar sobre los oscuros */
 .barra, .hero3d, .hero-estatico, .pie { --foco: var(--ambar); }
 :focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.saltar {
+  position: absolute; left: 8px; top: -80px; z-index: 40; padding: 12px 18px; border-radius: 12px; background: var(--ambar); color: var(--tinta);
+  font-weight: 800; text-decoration: none;
+}
+.saltar:focus { top: 8px; }
 .cargando { display: grid; place-items: center; min-height: 100vh; margin: 0; color: var(--suave); }
 
 /* ---------- Botones: contorno grueso y sombra dura ---------- */
@@ -400,3 +406,24 @@ button { cursor: pointer; }
 .carrito-envio label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .carrito-envio input { width: 20px; height: 20px; accent-color: var(--terra-osc); }
 .carrito .carrito-datos .btn { width: auto; justify-self: start; }
+
+/* ---------- Variantes, oferta y fotos extra ---------- */
+.etiqueta-oferta { top: auto; bottom: 12px; left: 12px; background: var(--terra-osc); color: #fff; border-color: var(--tinta); }
+.miniaturas { display: flex; gap: 6px; padding: 8px 12px 0; overflow-x: auto; }
+.miniaturas button { flex: none; width: 44px; height: 44px; padding: 2px; border: 2px solid var(--tinta); border-radius: 10px; background: #fff; }
+.miniaturas button[aria-pressed="true"] { border-color: var(--terra-osc); box-shadow: 0 0 0 2px var(--terra-osc); }
+.miniaturas img { width: 100%; height: 100%; object-fit: contain; }
+.producto-opcion { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; }
+.producto-opcion select { min-height: 44px; padding: .4em .6em; border: 2px solid var(--tinta); border-radius: 10px; background: #fff; }
+.producto-aviso { margin: 0; color: #8a2d12; font-size: .85rem; font-weight: 600; }
+.precio-tachado { display: block; font-size: .8rem; font-weight: 600; color: var(--suave); }
+.precio-desde { font-size: .75rem; font-weight: 600; color: var(--suave); }
+.admin-variante { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; align-items: end; padding: 10px; margin: 8px 0; border: 2px dashed var(--tinta); border-radius: 12px; }
+.admin-variante label { font-size: .8rem; }
+.admin-fotos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.admin-fotos figure { position: relative; margin: 0; width: 72px; height: 72px; border: 2px solid var(--tinta); border-radius: 10px; background: #fff; }
+.admin-fotos img { width: 100%; height: 100%; object-fit: contain; }
+.admin-fotos button { position: absolute; top: -10px; right: -10px; width: 44px; height: 44px; padding: 0; border: 0; background: none; font-weight: 800; }
+.admin-fotos button span { display: grid; place-items: center; width: 24px; height: 24px; margin: 10px 0 0 10px; border-radius: 50%; background: var(--tinta); color: #fff; }
+.admin-oculto { opacity: .6; }
+.pedido-estado.pedido-cancelado { text-decoration: line-through; }

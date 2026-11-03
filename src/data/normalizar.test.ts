@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fotoSegura, normalizarDatos } from './normalizar';
+import { normalizarProducto } from './producto';
 import { DATOS_INICIALES } from './seed';
 
 describe('fotoSegura', () => {
@@ -60,5 +61,66 @@ describe('normalizarDatos', () => {
     expect(b).toMatchObject({ stock: 0, agotado: true });
     expect(c.stock).toBe(0);
     expect(d.stock).toBeUndefined();
+  });
+});
+
+describe('normalizarProducto: oferta, ocultar, fotos y variantes', () => {
+  const base = { id: 'a', nombre: 'A', precio: 1000 };
+  const uno = (extra: object) => normalizarProducto({ ...base, ...extra })!;
+
+  it('el precio promocional debe ser menor al normal', () => {
+    expect(uno({ precioPromo: 800 }).precioPromo).toBe(800);
+    expect(uno({ precioPromo: 1000 }).precioPromo).toBeUndefined();
+    expect(uno({ precioPromo: 0 }).precioPromo).toBeUndefined();
+    expect(uno({ precioPromo: 'barato' }).precioPromo).toBeUndefined();
+  });
+
+  it('oculto solo vale con true', () => {
+    expect(uno({ oculto: true }).oculto).toBe(true);
+    expect(uno({ oculto: 'si' }).oculto).toBeUndefined();
+  });
+
+  it('las fotos extra pasan por fotoSegura y se acotan', () => {
+    const p = uno({ fotos: ['/a.webp', 'javascript:x', 'https://x/b.jpg', 42, ...new Array(10).fill('/c.webp')] });
+    expect(p.fotos).toEqual(['/a.webp', 'https://x/b.jpg', '/c.webp', '/c.webp', '/c.webp']);
+    expect(uno({ fotos: [] }).fotos).toBeUndefined();
+  });
+
+  it('variantes: id derivado de los valores, sin repetidas ni incompletas, y manda su stock', () => {
+    const p = uno({
+      stock: 9, propiedades: ['Talle', 'Color'],
+      variantes: [
+        { valores: ['M', 'Rojo'], stock: 3, precio: 1200, sku: 'M-R' },
+        { id: 'trucho', valores: ['M', 'Rojo'], stock: 99 }, // repetida: se descarta
+        { valores: ['L', ''], stock: 1 }, // incompleta
+        { valores: ['L', 'Azul'] },
+        { valores: ['S', 'Negro'], stock: -4, precio: -1 },
+      ],
+    });
+    expect(p.propiedades).toEqual(['Talle', 'Color']);
+    expect(p.variantes).toEqual([
+      { id: 'm-rojo', valores: ['M', 'Rojo'], stock: 3, precio: 1200, sku: 'M-R' },
+      { id: 'l-azul', valores: ['L', 'Azul'] },
+      { id: 's-negro', valores: ['S', 'Negro'], stock: 0 },
+    ]);
+    expect(p.stock).toBeUndefined(); // con variantes el stock del producto no cuenta
+    expect(p.agotado).toBeUndefined(); // 'l-azul' es ilimitada
+  });
+
+  it('agotado cuando todas las variantes están en 0; sin propiedades usa «Opción»; más de 3 propiedades se recortan', () => {
+    expect(uno({ variantes: [{ valores: ['M'], stock: 0 }, { valores: ['L'], stock: 0 }] })).toMatchObject({ agotado: true, propiedades: ['Opción'] });
+    expect(uno({ propiedades: ['a', 'b', 'c', 'd'], variantes: [{ valores: ['1', '2', '3', '4'] }] }).propiedades).toEqual(['a', 'b', 'c']);
+  });
+
+  it('sin variantes válidas el producto vuelve a ser simple', () => {
+    const p = uno({ stock: 2, propiedades: ['Talle'], variantes: [{ valores: [''] }, 'x'] });
+    expect(p.variantes).toBeUndefined();
+    expect(p.propiedades).toBeUndefined();
+    expect(p.stock).toBe(2);
+  });
+
+  it('máximo 40 variantes', () => {
+    const variantes = Array.from({ length: 60 }, (_, i) => ({ valores: [`v${i}`] }));
+    expect(uno({ variantes }).variantes).toHaveLength(40);
   });
 });
