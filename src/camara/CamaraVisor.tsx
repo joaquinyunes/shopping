@@ -1,3 +1,4 @@
+import './visor.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Producto } from '../tipos';
 import { CamaraFicha } from './CamaraFicha';

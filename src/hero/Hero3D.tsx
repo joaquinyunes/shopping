@@ -1,3 +1,4 @@
+import './hero3d.css';
 import { precioVigente } from '../lib/catalogo';
 import { useMemo, useRef } from 'react';
 import { formatoPrecio, linkWhatsApp } from '../lib/pedido';
@@ -78,7 +79,7 @@ export default function Hero3D({ datos, limitado, alAgregar, alVerCategoria, alA
             href={linkWhatsApp(tienda.whatsapp, `¡Hola ${tienda.nombre}! Quería hacer una consulta.`)}
           >Pedir por WhatsApp</a>
           <a className="ir-directo" href="#catalogo">Ir al catálogo ↓</a>
-          <button type="button" className="ver-simple" onClick={alSimplificar}>Versión simple</button>
+          <button type="button" className="ver-simple" onClick={alSimplificar}>Cerrar recorrido</button>
         </div>
         <p className="pista" data-pista>Scrolleá para recorrer la casa · tocá lo que flota <span aria-hidden="true">↓</span></p>
         <div className="progreso" aria-hidden="true"><i data-barra /></div>

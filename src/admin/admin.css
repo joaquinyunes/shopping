@@ -1,0 +1,64 @@
+/* ---------- Admin ---------- */
+.admin { max-width: 760px; margin: 0 auto; padding: 24px 16px 120px; }
+.admin h1 { margin: 0; font: 800 2rem var(--serif); }
+.admin h2 { margin: 28px 0 12px; font: 800 1.35rem var(--serif); }
+.admin-cabeza, .admin-titulo-fila { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.admin-titulo-fila h2 { margin: 28px 0 12px; }
+.admin-aviso { padding: 10px 14px; border-radius: 12px; background: #fff3cd; font-size: .9rem; }
+.admin-error { margin: 0; padding: 8px 12px; border-radius: 10px; background: #fde2e0; color: #8a1c14; font-weight: 600; }
+.admin-link { border: 0; background: none; padding: 0; min-height: 44px; display: inline-flex; align-items: center; color: var(--terra-osc); text-decoration: underline; font-weight: 600; }
+.admin-tarjeta, .admin-item { background: var(--papel); border: 1px solid var(--linea); border-radius: 10px; padding: 16px; }
+.admin-tienda { display: grid; gap: 12px; }
+.admin label { display: block; font-size: .8rem; font-weight: 700; color: var(--suave); }
+.admin input:not([type="checkbox"]):not([type="file"]), .admin select, .admin textarea {
+  width: 100%; margin-top: 4px; padding: 10px 12px; border: 2px solid #cdbfae; border-radius: 10px; background: #fff; color: var(--tinta);
+}
+.admin-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.admin-interruptor { display: flex !important; align-items: center; gap: 10px; color: var(--tinta) !important; font-size: .95rem !important; }
+.admin-interruptor input { width: 22px; height: 22px; accent-color: var(--terra); }
+.admin-item { display: grid; grid-template-columns: 130px 1fr; gap: 16px; margin-bottom: 18px; }
+.admin-item.subiendo { opacity: .7; }
+.admin-foto { position: relative; width: 130px; height: 130px; border-radius: 14px; overflow: hidden; background: radial-gradient(circle, #fff, #f1e6d6); border: 2px solid var(--tinta); display: grid; place-items: center; }
+.admin-foto img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+.admin-foto label {
+  position: absolute; inset: auto 0 0; padding: 7px 0; background: var(--tinta); color: #fff !important; text-align: center; cursor: pointer; font-size: .8rem !important;
+}
+.admin-foto input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.admin-campos { display: grid; gap: 10px; min-width: 0; }
+.admin details { border-top: 1.5px dashed #d8c9b6; padding-top: 8px; display: grid; gap: 10px; }
+.admin summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; color: var(--tinta); }
+.admin-nota { margin: 0; font-size: .8rem; color: var(--suave); }
+.admin-borrar { justify-self: start; border: 0; background: none; color: #b3261e; font-weight: 700; padding: 6px 0; min-height: 44px; }
+.admin-barra {
+  position: fixed; inset: auto 0 0; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 250, 243, .96); backdrop-filter: blur(8px); border-top: 3px solid var(--tinta);
+}
+.admin-barra span { font-size: .9rem; font-weight: 600; }
+.admin-barra .btn { --borde: var(--tinta); }
+.admin-login { max-width: 420px; margin-top: 12vh; }
+.admin-login form { display: grid; gap: 14px; }
+.admin .btn { --borde: var(--tinta); }
+
+/* Back-office: pedidos, planilla CSV y envío en el carrito */
+.admin-acciones { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 8px 0 12px; }
+.admin-acciones label.admin-link { cursor: pointer; }
+.admin-informe { margin: 0 0 12px; padding: 10px 14px 10px 30px; border-radius: 12px; background: #fff3cd; font-size: .9rem; }
+.admin-pedido { margin-bottom: 14px; }
+.admin-pedido header { display: flex; justify-content: space-between; gap: 8px; }
+.admin-pedido ul { margin: 6px 0; padding-left: 18px; }
+.pedido-estado { padding: 2px 10px; border-radius: 999px; border: 2px solid var(--tinta); font-size: .8rem; font-weight: 700; text-transform: capitalize; }
+.pedido-pendiente { background: #fff3cd; } .pedido-pagado, .pedido-entregado { background: #d6f0d2; } .pedido-enviado { background: #d9e8f7; } .pedido-cancelado { background: #fde2e0; }
+
+.admin-variante { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; align-items: end; padding: 10px; margin: 8px 0; border: 2px dashed var(--tinta); border-radius: 12px; }
+.admin-variante label { font-size: .8rem; }
+.admin-fotos { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.admin-fotos figure { position: relative; margin: 0; width: 72px; height: 72px; border: 2px solid var(--tinta); border-radius: 10px; background: #fff; }
+.admin-fotos img { width: 100%; height: 100%; object-fit: contain; }
+.admin-fotos button { position: absolute; top: -10px; right: -10px; width: 44px; height: 44px; padding: 0; border: 0; background: none; font-weight: 800; }
+.admin-fotos button span { display: grid; place-items: center; width: 24px; height: 24px; margin: 10px 0 0 10px; border-radius: 50%; background: var(--tinta); color: #fff; }
+.admin-oculto { opacity: .6; }
+.pedido-estado.pedido-cancelado { text-decoration: line-through; }
+@media (max-width: 720px) {
+  .admin-item { grid-template-columns: 1fr; }
+  .admin-foto { width: 100%; height: 190px; }
+}

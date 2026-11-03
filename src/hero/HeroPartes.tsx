@@ -7,7 +7,7 @@ export function HeroTextos({ tienda, categorias }: { tienda: Tienda; categorias:
   return (
     <div className="hero-textos">
       <p className="sobre" data-intro>Tienda online</p>
-      <h1 data-intro>{tienda.nombre}</h1>
+      <h2 data-intro>{tienda.nombre}</h2>
       <p className="hero-lema" data-intro>{categorias.join(' · ')}</p>
       <p className="hero-sub" data-intro>{tienda.lema}. Elegí, armá tu pedido y mandalo por WhatsApp.</p>
       <div className="hero-botones" data-intro>

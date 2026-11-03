@@ -1,3 +1,4 @@
+import './admin.css';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { borrarLocal, cargarDatos, guardarLocal, hayNube } from '../data/almacen';
 import { normalizarDatos } from '../data/normalizar';

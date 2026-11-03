@@ -1,0 +1,84 @@
+.hero3d { --foco: var(--ambar); }
+/* ---------- Hero 3D ---------- */
+/* Todo el contenido del viaje vive en una columna centrada: en pantallas anchas no se va a los bordes. */
+.hero3d { --margen: max(var(--gutter), calc((100vw - 1040px) / 2)); position: relative; height: 500vh; background: var(--oscuro); color: var(--crema); --borde: var(--crema); }
+.escenario { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: clip; }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hero-capa { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; padding: calc(var(--alto-barra) + 12px) var(--margen) 56px; }
+.hero-capa a, .hero-capa button { pointer-events: auto; }
+
+/* Velo oscuro suave detrás del texto: el pasillo es claro y el texto crema tiene que leerse siempre */
+.hero-izq, .hito { isolation: isolate; }
+.hero-izq { position: relative; }
+.hero-izq::before, .hito::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; inset: -12% -45% -12% calc(-1 * var(--gutter));
+  background: radial-gradient(ellipse at 30% 50%, rgba(27, 23, 20, .82), rgba(27, 23, 20, 0) 68%);
+}
+.hito[data-lado="-1"]::before { inset: 0 calc(-1 * var(--gutter)) 0 -45%; background: radial-gradient(ellipse at 70% 50%, rgba(27, 23, 20, .82), rgba(27, 23, 20, 0) 68%); }
+.hero-textos { max-width: 560px; }
+.sobre { margin: 0 0 6px; text-transform: uppercase; letter-spacing: .16em; font-size: .78rem; font-weight: 800; color: var(--ambar); }
+.hero-textos h2 { margin: 0; font: 800 clamp(3.2rem, 9vw, 6.4rem)/.92 var(--serif); letter-spacing: -.02em; text-shadow: 0 2px 28px rgba(0, 0, 0, .55); }
+.hero-lema { margin: 14px 0 6px; font-size: clamp(1.05rem, 2.4vw, 1.4rem); font-weight: 800; color: var(--ambar); }
+.hero-sub { margin: 0 0 22px; max-width: 34ch; opacity: .85; }
+.hero-botones { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.hero-der { position: absolute; right: var(--margen); bottom: calc(max(7vh, 40px) + 8px); }
+.destacado {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 2.5px solid var(--crema); border-radius: 18px;
+  background: rgba(27, 23, 20, .72); backdrop-filter: blur(8px); box-shadow: 5px 5px 0 var(--terra); pointer-events: auto;
+}
+.destacado img { width: 56px; height: 56px; object-fit: contain; }
+.destacado p { margin: 0; font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--ambar); }
+.destacado strong { display: block; font: 600 1rem/1.15 var(--serif); }
+.destacado span { font-weight: 800; }
+
+.hito {
+  position: absolute; left: var(--margen); top: 0; bottom: 0; max-width: min(400px, 42vw); display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start; visibility: hidden; opacity: 0; padding-top: var(--alto-barra);
+}
+.hito[data-lado="-1"] { left: auto; right: var(--margen); align-items: flex-end; text-align: right; }
+.hito h2 { margin: 0 0 8px; font: 800 clamp(2.2rem, 5.2vw, 3.9rem)/1 var(--serif); text-shadow: 0 2px 28px rgba(0, 0, 0, .55); }
+.hito > p { margin: 0 0 8px; font-size: 1.1rem; text-shadow: 0 1px 14px rgba(0, 0, 0, .6); }
+.hito .sobre { font-size: .78rem; }
+.hito-producto { font-size: 1.5rem !important; margin-bottom: 16px !important; color: var(--ambar); }
+.hito-botones { display: flex; flex-wrap: wrap; gap: 10px; }
+.hito[data-lado="-1"] .hito-botones { justify-content: flex-end; }
+.hito-final {
+  position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); display: flex; flex-direction: column; align-items: center; gap: 14px;
+  text-align: center; visibility: hidden; opacity: 0;
+}
+.hito-final h2 { margin: 0; font: 800 clamp(2.2rem, 7vw, 4rem)/1 var(--serif); text-shadow: 0 2px 28px rgba(0, 0, 0, .55); }
+
+/* Siempre visibles durante el recorrido: pedir, saltar al catálogo y pasar a la versión simple */
+.escena-acciones {
+  position: absolute; z-index: 5; top: calc(var(--alto-barra) + 14px); right: var(--margen);
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+}
+.escena-acciones a, .escena-acciones button {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 999px; font: 700 .85rem var(--sans); white-space: nowrap; cursor: pointer;
+  background: rgba(247, 241, 232, .14); border: 1.5px solid rgba(247, 241, 232, .4); color: var(--crema); backdrop-filter: blur(6px); text-decoration: none;
+}
+.escena-acciones .pedir-fijo { background: var(--wpp); border-color: var(--wpp); color: #0b2b16; }
+.escena-acciones a:hover, .escena-acciones button:hover { background: rgba(247, 241, 232, .26); }
+.escena-acciones .pedir-fijo:hover { background: #3be07e; }
+.pista { position: absolute; left: 50%; bottom: 18px; translate: -50% 0; margin: 0; font-size: .85rem; letter-spacing: .1em; text-transform: uppercase; opacity: .75; pointer-events: none; }
+.pista span { display: inline-block; animation: baja 1.4s infinite; }
+@keyframes baja { 50% { transform: translateY(5px); } }
+.progreso { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(247, 241, 232, .12); }
+.progreso i { display: block; height: 100%; background: var(--terra); transform: scaleX(0); transform-origin: left center; }
+@media (max-width: 720px) {
+  .hero-capa { align-items: flex-start; padding-top: calc(var(--alto-barra) + 18px); }
+  .hero-textos h2 { font-size: clamp(2.8rem, 15vw, 4.2rem); }
+  .hero-sub { display: none; }
+  .hero-botones .btn { flex: 1; padding: .6em .8em; font-size: .9rem; }
+  .hero-der { left: var(--gutter); right: var(--gutter); bottom: 84px; }
+  .destacado { width: 100%; }
+  .destacado > div { flex: 1; min-width: 0; }
+  .hito, .hito[data-lado="-1"] { left: var(--gutter); right: var(--gutter); max-width: none; justify-content: flex-start; align-items: flex-start; text-align: left; padding-top: calc(var(--alto-barra) + 18px); }
+  .hito[data-lado="-1"] .hito-botones { justify-content: flex-start; }
+  .hito h2 { font-size: clamp(2rem, 10vw, 3rem); }
+  .hito > p { font-size: 1rem; }
+  .escena-acciones { top: auto; bottom: 12px; left: 12px; right: 12px; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .escena-acciones a, .escena-acciones button { font-size: .75rem; padding: 6px 12px; }
+  .pista { display: none; }
+}

@@ -24,11 +24,12 @@ function IconoCamara() {
 
 /** Botón "Ver en tu mesa". Se enchufa con una línea en cualquier tarjeta: <BotonCamara producto={p} alPedir={...} />. */
 export function BotonCamara({ producto, alPedir, variante = 'fila' }: Props) {
-  const [abierto, setAbierto] = useState(false);
+  // Dónde cuelga el visor; `null` = cerrado. Dentro de la ficha (un <dialog> modal) tiene que colgar del diálogo: lo que está fuera queda tapado por la capa superior.
+  const [destino, setDestino] = useState<HTMLElement | null>(null);
   const botonRef = useRef<HTMLButtonElement>(null);
 
   const cerrar = useCallback(() => {
-    setAbierto(false);
+    setDestino(null);
     setTimeout(() => botonRef.current?.focus(), 0); // devuelve el foco al botón que abrió el visor
   }, []);
 
@@ -36,16 +37,16 @@ export function BotonCamara({ producto, alPedir, variante = 'fila' }: Props) {
     <>
       <button
         type="button" ref={botonRef} className={`btn-camara btn-camara-${variante}`}
-        onClick={() => setAbierto(true)} aria-label={`Ver ${producto.nombre} en tu mesa`} title="Ver en tu mesa"
+        onClick={() => setDestino(botonRef.current?.closest('dialog') ?? document.body)} aria-label={`Ver ${producto.nombre} en tu mesa`} title="Ver en tu mesa"
       >
         <IconoCamara />
         {variante === 'fila' && <span>Ver en tu mesa</span>}
       </button>
-      {abierto && createPortal(
+      {destino && createPortal(
         <Suspense fallback={<div className="visor visor-cargando-pantalla" role="status">Abriendo…</div>}>
           <CamaraVisor producto={producto} alCerrar={cerrar} alPedir={alPedir} />
         </Suspense>,
-        document.body,
+        destino,
       )}
     </>
   );
