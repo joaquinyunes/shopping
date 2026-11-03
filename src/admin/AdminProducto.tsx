@@ -38,6 +38,7 @@ export function AdminProducto({ producto: p, categorias, subiendo, alCambiar, al
     const nuevas = texto.split(',').map(s => s.trim()).filter(Boolean).slice(0, MAX_PROPIEDADES);
     const ajustadas = variantes.map(v => ({ ...v, valores: nuevas.map((_, i) => v.valores[i] ?? '') }));
     if (nuevas.length === 0) return; // campo vacío mientras escribe: se conservan las propiedades y variantes actuales
+    if (!variantes.length) return alCambiar({ propiedades: nuevas }); // todavía sin variantes: se recuerdan los nombres para la primera que se agregue
     guardarVariantes(ajustadas, nuevas);
   };
 
