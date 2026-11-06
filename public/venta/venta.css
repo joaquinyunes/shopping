@@ -1,0 +1,20 @@
+:root { color-scheme: light; --tinta: #2b2420; --suave: #5f534b; --terra: #a44d2e; --linea: #e3d6c4; --arena: #f2e9dc; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fbf7f1; color: var(--tinta); font: 17px/1.6 Inter, system-ui, sans-serif; }
+a { color: var(--terra); }
+.seccion { padding: 56px max(16px, calc((100vw - 1040px) / 2)); }
+.seccion:nth-of-type(even) { background: var(--arena); }
+h1, h2 { font-family: Fraunces, Georgia, serif; font-weight: 500; line-height: 1.1; margin: 0 0 16px; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); max-width: 18ch; }
+h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+.lead { font-size: 1.15rem; color: var(--suave); max-width: 52ch; }
+.btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 1.4em; border-radius: 6px; background: var(--terra); color: #fff; font-weight: 600; text-decoration: none; }
+.fotos { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-top: 24px; }
+.fotos img { border: 1px solid var(--linea); border-radius: 8px; max-width: 100%; height: auto; }
+.precios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.precios article { background: #fff; border: 1px solid var(--linea); border-radius: 8px; padding: 20px; }
+.precios h3 { margin: 0 0 4px; font: 500 1.3rem Fraunces, Georgia, serif; }
+.precio { font-size: 1.6rem; font-weight: 700; margin: 0 0 8px; }
+.nota { background: #fff3cd; padding: 10px 14px; border-radius: 8px; font-size: .95rem; }
+.completar { background: #fde7d7; padding: 0 4px; border-radius: 3px; }
+ul { padding-left: 20px; }

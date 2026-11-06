@@ -32,6 +32,12 @@ export function stockVisible(p: Pick<Producto, 'stock'>, v?: Pick<Variante, 'sto
   return v ? v.stock : p.stock;
 }
 
+/** Las fotos de ejemplo tienen una versión de 400 px (scripts/miniaturas.mjs); las que sube la dueña no: sin srcset. */
+export function srcSetDe(foto: string): string | undefined {
+  const m = /^(\/img\/productos\/[a-z0-9-]+)\.webp$/.exec(foto);
+  return m ? `${m[1]}-400.webp 400w, ${foto} 640w` : undefined;
+}
+
 const PREFIJO = '#/producto/';
 export const rutaFicha = (id: string) => PREFIJO + encodeURIComponent(id);
 export function idDeRuta(hash: string): string | null {

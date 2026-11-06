@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BotonCamara } from '../camara/BotonCamara';
 import { enOferta, estaAgotado, precioVigente, rangoDePrecios } from '../lib/catalogo';
 import { formatoPrecio } from '../lib/pedido';
-import { rutaFicha } from '../lib/tienda-vista';
+import { rutaFicha, srcSetDe } from '../lib/tienda-vista';
 import type { Producto } from '../tipos';
 
 interface Props {
@@ -33,7 +33,7 @@ export function ProductoTarjeta({ producto, conCamara, alAgregar, alAbrir }: Pro
     <article id={`p-${producto.id}`} className={`tarjeta${agotado ? ' sin-stock' : ''}`}>
       <div className="tarjeta-foto">
         <a href={ruta} tabIndex={-1} aria-hidden="true">
-          {producto.foto ? <img className="foto-1" src={producto.foto} alt="" loading="lazy" decoding="async" /> : <span className="sin-foto">Sin foto</span>}
+          {producto.foto ? <img className="foto-1" src={producto.foto} srcSet={srcSetDe(producto.foto)} sizes="(max-width: 720px) 46vw, 240px" width="640" height="640" alt="" loading="lazy" decoding="async" /> : <span className="sin-foto">Sin foto</span>}
           {segundaFoto && <img className="foto-2" src={segundaFoto} alt="" loading="lazy" decoding="async" />}
         </a>
         {agotado && <span className="etiqueta etiqueta-agotado">Agotado</span>}

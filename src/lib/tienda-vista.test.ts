@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buscarProductos, destacadosDe, idDeRuta, relacionadosDe, rutaFicha, stockVisible } from './tienda-vista';
+import { buscarProductos, destacadosDe, idDeRuta, relacionadosDe, rutaFicha, srcSetDe, stockVisible } from './tienda-vista';
 import type { Producto } from '../tipos';
 
 const p = (o: Partial<Producto> & { id: string }): Producto => ({ nombre: o.id, categoria: 'Cocina', precio: 1000, foto: `/img/${o.id}.webp`, ...o });
@@ -65,5 +65,14 @@ describe('ruta de la ficha', () => {
     expect(idDeRuta('#/admin')).toBeNull();
     expect(idDeRuta('')).toBeNull();
     expect(idDeRuta('#/producto/')).toBeNull();
+  });
+});
+
+describe('srcSetDe', () => {
+  it('las fotos de ejemplo tienen versión chica; las subidas o de otro lugar, no', () => {
+    expect(srcSetDe('/img/productos/taza.webp')).toBe('/img/productos/taza-400.webp 400w, /img/productos/taza.webp 640w');
+    expect(srcSetDe('https://x.test/a.jpg')).toBeUndefined();
+    expect(srcSetDe('data:image/png;base64,AAA')).toBeUndefined();
+    expect(srcSetDe('/api/foto?id=1')).toBeUndefined();
   });
 });

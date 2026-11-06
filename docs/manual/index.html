@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de la dueña — Casa Nido</title>
+<style>
+  @page { size: A4; margin: 16mm; }
+  body { font: 11pt/1.5 Inter, "Segoe UI", sans-serif; color: #2b2420; }
+  h1 { font: 600 26pt Georgia, serif; margin: 0 0 4pt; }
+  h2 { font: 600 15pt Georgia, serif; margin: 20pt 0 6pt; border-bottom: 1px solid #e3d6c4; padding-bottom: 3pt; break-after: avoid; }
+  .portada { padding: 20pt 0 10pt; }
+  .paso { display: grid; grid-template-columns: 1fr 55mm; gap: 12pt; align-items: start; break-inside: avoid; margin: 8pt 0; }
+  .paso img { width: 55mm; border: 1px solid #e3d6c4; border-radius: 6px; }
+  .aviso { background: #fff3cd; padding: 6pt 10pt; border-radius: 6px; font-size: 10pt; }
+  li { margin: 2pt 0; }
+  code { background: #f2e9dc; padding: 0 3pt; border-radius: 3px; font-size: 10pt; }
+  .tabla { border-collapse: collapse; width: 100%; font-size: 10pt; } .tabla td, .tabla th { border: 1px solid #e3d6c4; padding: 3pt 6pt; text-align: left; }
+</style>
+</head>
+<body>
+<div class="portada">
+  <h1>Manual de la dueña</h1>
+  <p>Cómo manejar tu tienda Casa Nido desde el celular: pedidos, productos, precios y qué hacer si algo falla. Version 06/11/2026. Las capturas son del sitio de prueba con datos de ejemplo.</p>
+  <p class="aviso">Tu tienda se maneja en <strong>tu-sitio/#/admin</strong>. Guardá la dirección en el celular. Tu contraseña y la app del código (Google Authenticator o similar) son solo tuyas: no las compartas.</p>
+</div>
+
+<h2>1. Entrar al panel</h2>
+<div class="paso"><div>
+  <ol>
+    <li>Abrí <code>tu-sitio/#/admin</code>.</li>
+    <li>Escribí tu <strong>contraseña</strong> y el <strong>código de 6 dígitos</strong> de tu app (cambia cada 30 segundos).</li>
+    <li>Si te equivocás 5 veces seguidas, se bloquea 15 minutos: es normal, es para protegerte.</li>
+    <li>La sesión dura 8 horas. Para salir, tocá <em>Cerrar sesión</em>. Si perdiste el celular: <em>Cerrar en todos los dispositivos</em> desde otro equipo y cambiá la contraseña.</li>
+  </ol></div><img src="03-entrar.png" alt="Pantalla para entrar al admin"></div>
+
+<h2>2. Ver y atender los pedidos</h2>
+<div class="paso"><div>
+  <p>Arriba de todo están los pedidos. Cada uno muestra el número, el estado, quién lo hizo y qué pidió.</p>
+  <table class="tabla"><tr><th>Estado</th><th>Qué significa</th></tr>
+  <tr><td>Pendiente</td><td>Entró el pedido; el stock ya se descontó.</td></tr>
+  <tr><td>Pagado</td><td>Ya cobraste.</td></tr>
+  <tr><td>Enviado / Entregado</td><td>En camino / recibido.</td></tr>
+  <tr><td>Cancelado</td><td>El stock <strong>vuelve</strong> a la tienda solo.</td></tr></table>
+  <p>Cambiá el estado con los botones de cada pedido. Un pedido enviado ya no se puede cancelar. Podés <em>reabrir</em> uno cancelado (se vuelve a descontar el stock si alcanza).</p>
+</div><img src="04-panel-pedidos.png" alt="Lista de pedidos"></div>
+
+<h2>3. Datos de la tienda</h2>
+<div class="paso"><div>
+  <ul><li><strong>Nombre y frase</strong> de la portada.</li>
+  <li><strong>WhatsApp</strong>: el número donde te llegan los pedidos, con código de país (54 9…), sin espacios.</li>
+  <li><strong>Mensaje del pedido</strong>: si querés cambiar el texto que se manda por WhatsApp. Usá <code>{nombre}</code>, <code>{numero}</code>, <code>{detalle}</code>, <code>{envio}</code> y <code>{total}</code>. Vacío = el mensaje de siempre.</li>
+  <li>Los interruptores del <em>viaje 3D</em> y de la <em>cámara</em>: se pueden apagar; la tienda funciona igual.</li></ul>
+  <p>Al terminar tocá <strong>Guardar</strong> (barra de abajo).</p>
+</div><img src="05-tu-tienda.png" alt="Datos de la tienda"></div>
+
+<h2>4. Productos: precio, stock, fotos, variantes</h2>
+<div class="paso"><div>
+  <ul><li><strong>Foto</strong>: tocá la foto y elegí una del celular. Mejor con fondo liso y buena luz; se recorta sola.</li>
+  <li><strong>Precio</strong> y <strong>precio de oferta</strong> (tiene que ser menor; aparece tachado el normal).</li>
+  <li><strong>Stock</strong>: la cantidad que tenés. Vacío = sin límite. En 0, figura «Agotado».</li>
+  <li><strong>Variantes</strong> (talle, color…): cada una con su stock y precio.</li>
+  <li><strong>Ocultar</strong>: lo saca de la tienda sin borrarlo.</li>
+  <li><strong>Medidas</strong>: si las cargás, «Ver en tu mesa» muestra el tamaño real.</li></ul>
+</div><img src="06-producto.png" alt="Edición de un producto"></div>
+
+<h2>5. Cargar muchos productos de una vez (Excel / Tiendanube)</h2>
+<div class="paso"><div>
+  <ol><li>Tocá <em>Descargar planilla</em>: es el mismo formato de Tiendanube.</li>
+  <li>Completala en Excel y guardala como <strong>CSV</strong> (sirve con «;» o con «,» y decimales con coma).</li>
+  <li>Tocá <em>Cargar planilla</em>. El panel te dice qué se agregó, qué se actualizó y qué filas tienen errores (no se cargan, el resto sí).</li>
+  <li>Revisá y tocá <strong>Guardar</strong>.</li></ol>
+  <p class="aviso">Si venís de Tiendanube: exportá tus productos desde su panel y cargá ese archivo acá.</p>
+</div><img src="07-planilla.png" alt="Descargar y cargar planilla"></div>
+
+<h2>6. Historial de cambios</h2>
+<p>Al final del panel, <em>Historial de cambios</em> muestra quién cambió precios, stock y estados de pedidos, con fecha. No se puede borrar ni editar.</p>
+
+<h2>7. Si una clienta pide ver o borrar sus datos</h2>
+<p>En <em>Datos de una clienta</em> buscala por mail o teléfono. <em>Descargar sus datos</em> te baja un archivo para entregarle; <em>Borrar sus datos</em> reemplaza su nombre, mail y teléfono por «Datos borrados a pedido» (la venta queda registrada sin datos personales). Tenés 10 días corridos para responder un pedido de acceso.</p>
+
+<h2>8. Cómo ve tu clienta la tienda</h2>
+<div class="paso"><div>
+  <p>La clienta elige por ambiente o busca, mira la ficha del producto, lo agrega al pedido y lo manda por WhatsApp. Con <strong>«Ver en tu mesa»</strong> prueba el producto con la cámara del celular, a tamaño real (necesita una tarjeta de banco para calibrar la medida).</p>
+</div><img src="02-ficha.png" alt="Ficha de producto"></div>
+
+<h2>9. Si algo falla</h2>
+<ul>
+  <li><strong>«Contraseña o código incorrectos»</strong>: revisá la hora del celular (tiene que ser automática) y probá con el código nuevo.</li>
+  <li><strong>«La tienda cambió mientras editabas»</strong>: entró un pedido; recargá y repetí tu cambio.</li>
+  <li><strong>La tienda no carga o no deja pedir</strong>: mirá <code>tu-sitio/api/salud</code>; si no dice <code>ok</code>, avisá a soporte (ver el runbook).</li>
+  <li><strong>Soporte</strong>: escribí por WhatsApp/mail con una captura. Respuesta en 1 día hábil (plan mensual).</li>
+</ul>
+</body>
+</html>

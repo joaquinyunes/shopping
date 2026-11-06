@@ -26,7 +26,7 @@ export function Portada({ tienda, destacado, alAgregar }: Props) {
         </div>
       </div>
       <div className="portada-arte">
-        <img src="/img/ambientes/interior.webp" width="1200" height="670" alt="Estantes con cerámica, textiles y plantas dentro del local de Casa Nido" fetchPriority="high" />
+        <img src="/img/ambientes/interior.webp" srcSet="/img/ambientes/interior-800.webp 800w, /img/ambientes/interior.webp 1200w" sizes="(max-width: 720px) 100vw, 55vw" width="1200" height="670" alt="Estantes con cerámica, textiles y plantas dentro del local de Casa Nido" fetchPriority="high" />
         {destacado && (
           <div className="portada-producto">
             <img src={destacado.foto} alt="" width="64" height="64" />
