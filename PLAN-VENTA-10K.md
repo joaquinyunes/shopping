@@ -21,7 +21,7 @@ Lo que se ve hoy: portada oscura, titular serif enorme, tarjetas de producto inc
 - [x] **R6** 🤖 Antes/después: capturas a 375 px y 1280 px en `docs/REDISENO.md`, y pasar `design:design-critique` y `design:accessibility-review`.
 
 ## B. Lo que falta del plan anterior (PLAN-POR-PROYECTO §1)
-- [ ] 🤖 **6** Adaptadores de envío (Correo Argentino, Andreani, OCA, Zipnova) — solo cuando haya credenciales; hoy quedan `conRespaldo` y `ENVIO_TARIFAS`.
+- [~] 🤖 **6** Adaptadores de envío: Andreani, Correo Argentino y OCA escritos detrás de `EnviosProvider` con respaldo y 14 tests (respuestas simuladas); **sin verificar contra los correos reales** y **Zipnova no hecho** — ver `docs/ENVIOS.md`.
 - [ ] 👤 **7** Vercel: `MONGODB_URI`, `ADMIN_PASSWORD`, `ORIGENES_PERMITIDOS`; Atlas con acceso de red.
 - [ ] 👤 **8** Render estático: `VITE_API_URL` = URL de Vercel.
 - [ ] 👤 **9** Credenciales de correos (Resend) y Mercado Pago — al final.
@@ -31,8 +31,8 @@ Lo que se ve hoy: portada oscura, titular serif enorme, tarjetas de producto inc
 - (S1 ya está: 0 vulnerabilidades)
 
 ## D. Vendible (de `..\PLAN-VENTA-10K.md` §4)
-- [ ] V1 paquetes y precios · [ ] V2 tabla a 3 años vs Tiendanube (precio vigente del sitio) · [ ] V3 demo aparte con cartel · [ ] V4 despliegue repetible · [ ] V5 manual de la dueña + videos · [ ] V7 uptime · [ ] V8 página de venta · [ ] V9 Lighthouse ≥ 90 · [ ] V10 piloto con la dueña real
-- [ ] **Extra** Importador de catálogo desde Tiendanube/Excel y plantilla de WhatsApp con el pedido (para que migrar sea fácil: es el argumento de venta).
+- [x] V1 paquetes y precios (`docs/VENTA.md`, propuesta a validar) · [x] V2 tabla a 3 años vs Tiendanube (precios leídos el 03/11/2026, fuente en el doc) · [x] V3 demo aparte con cartel (`npm run build:demo`; el proyecto en Vercel es 👤) · [~] V4 despliegue repetible (`docs/INSTANCIA-NUEVA.md` + `scripts/verificar-instancia.mjs` probado en local; la nube de cero no se cronometró) · [~] V5 manual (PDF con capturas y runbook hechos; **faltan los videos**) · [~] V7 uptime (`/api/salud` + workflow hechos; sin correr en GitHub y sin Sentry) · [~] V8 página de venta (`/venta/`, con COMPLETAR de contacto, demo y caso real) · [ ] V9 Lighthouse ≥ 90 (**no llegó: 71–83**, ver `docs/RENDIMIENTO.md`) · [ ] V10 piloto con la dueña real (👤)
+- [x] **Extra** Importador (CSV de Excel con «;» y decimales con coma, plantilla de WhatsApp editable; `.xlsx` directo no: se guarda como CSV) de catálogo desde Tiendanube/Excel y plantilla de WhatsApp con el pedido (para que migrar sea fácil: es el argumento de venta).
 
 ## Salida: cuándo está listo
 ☐ portada y ficha rediseñadas con antes/después ☐ 161+ tests, tsc, build, eslint en verde ☐ CSP en bloqueo sin errores en consola ☐ backup restaurado una vez ☐ pedido de prueba descuenta stock en producción (requiere 👤 7 y 8) ☐ paquete de entrega (V5) listo
