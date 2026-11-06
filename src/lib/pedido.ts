@@ -31,13 +31,17 @@ export function totalDelCarrito(carrito: Carrito, productos: Producto[]) {
 /** Lo que devuelve el servidor cuando el pedido quedó registrado: número, envío cotizado y total final. */
 export interface ExtraMensaje { numero?: number; envio?: { servicio: string; precio: number }; total?: number }
 
-export function armarMensaje(carrito: Carrito, productos: Producto[], tienda: Pick<Tienda, 'nombre'>, extra: ExtraMensaje = {}): string | null {
+export const PLANTILLA_PEDIDO = '¡Hola {nombre}! Quiero hacer este pedido{numero}:\n\n{detalle}{envio}\n\nTotal: {total}';
+
+export function armarMensaje(carrito: Carrito, productos: Producto[], tienda: Pick<Tienda, 'nombre' | 'plantillaPedido'>, extra: ExtraMensaje = {}): string | null {
   const lineas = lineasDelCarrito(carrito, productos);
   if (!lineas.length) return null;
   const detalle = lineas.map(l => `• ${l.cant} x ${nombreDeLinea(l)} — ${formatoPrecio(precioDeLinea(l) * l.cant)}`).join('\n');
   const envio = extra.envio ? `\n${extra.envio.servicio}: ${extra.envio.precio ? formatoPrecio(extra.envio.precio) : 'gratis'}` : '';
   const total = extra.total ?? totalDelCarrito(carrito, productos);
-  return `¡Hola ${tienda.nombre}! Quiero hacer este pedido${extra.numero ? ` (n.º ${extra.numero})` : ''}:\n\n${detalle}${envio}\n\nTotal: ${formatoPrecio(total)}`;
+  const valores: Record<string, string> = { nombre: tienda.nombre, numero: extra.numero ? ` (n.º ${extra.numero})` : '', detalle, envio, total: formatoPrecio(total) };
+  // una sola pasada: lo que venga dentro de un valor (por ejemplo un producto llamado «{total}») no se vuelve a reemplazar
+  return (tienda.plantillaPedido?.trim() || PLANTILLA_PEDIDO).replace(/\{(nombre|numero|detalle|envio|total)\}/g, (_, k: string) => valores[k]);
 }
 
 export const linkWhatsApp = (numero: string, texto: string) =>

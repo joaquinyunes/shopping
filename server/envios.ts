@@ -1,3 +1,4 @@
+import { correosDesdeEnv, variosCorreos } from './envios-correos.js';
 import { ErrorHttp } from './http.js';
 
 export interface PedidoEnvio { cp: string; pesoGr: number; valorDeclarado: number }
@@ -93,12 +94,14 @@ export function conRespaldo(principal: EnviosProvider, respaldo: EnviosProvider,
 
 /**
  * Proveedor configurado en este deploy: tarifas por zona. `ENVIO_GRATIS_DESDE` (pesos) activa el envío gratis sobre ese monto
- * y `ENVIO_TARIFAS` (JSON) reemplaza las tarifas de ejemplo. Los adaptadores de Correo Argentino, Andreani, OCA y Zipnova
- * se agregan acá envueltos en `conRespaldo(adaptador, tarifaPorZona(...))` cuando haya credenciales y su documentación oficial.
+ * y `ENVIO_TARIFAS` (JSON) reemplaza las tarifas de ejemplo. Los adaptadores de Correo Argentino, Andreani y OCA (server/envios-correos.ts)
+ * se activan por variables de entorno y van envueltos en `conRespaldo(…, tarifaPorZona(...))`. Zipnova: falta su documentación oficial.
  */
 export function enviosDesdeEnv(): EnviosProvider {
   const gratisDesde = Number(process.env.ENVIO_GRATIS_DESDE);
-  return tarifaPorZona({ ...(Number.isFinite(gratisDesde) && gratisDesde > 0 && { gratisDesde }), tarifas: tarifasDesdeTexto(process.env.ENVIO_TARIFAS) });
+  const respaldo = tarifaPorZona({ ...(Number.isFinite(gratisDesde) && gratisDesde > 0 && { gratisDesde }), tarifas: tarifasDesdeTexto(process.env.ENVIO_TARIFAS) });
+  const correos = correosDesdeEnv(); // solo los que tienen todas sus variables (ver docs/ENVIOS.md)
+  return correos.length ? conRespaldo(variosCorreos(correos), respaldo) : respaldo;
 }
 
 export async function cotizarEnvio(proveedor: EnviosProvider, pedido: PedidoEnvio): Promise<OpcionEnvio[]> {

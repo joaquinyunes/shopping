@@ -207,6 +207,10 @@ export default function Admin() {
       <section className="admin-tarjeta admin-tienda">
         <label>Nombre<input value={datos.tienda.nombre} maxLength={40} onChange={e => editarTienda({ nombre: e.target.value })} /></label>
         <label>Frase<input value={datos.tienda.lema} maxLength={60} onChange={e => editarTienda({ lema: e.target.value })} /></label>
+        <label>Mensaje de WhatsApp del pedido (opcional)
+          <textarea rows={4} maxLength={600} value={datos.tienda.plantillaPedido ?? ''} placeholder="¡Hola {nombre}! Quiero hacer este pedido{numero}:&#10;&#10;{detalle}{envio}&#10;&#10;Total: {total}" onChange={e => editarTienda({ plantillaPedido: e.target.value || undefined })} />
+          <span className="admin-nota">Usá {'{nombre}'}, {'{numero}'}, {'{detalle}'} (lista de productos), {'{envio}'} y {'{total}'}. Vacío = el mensaje de siempre.</span>
+        </label>
         <label>WhatsApp (con código de país, ej. 5491123456789)
           <input value={datos.tienda.whatsapp} inputMode="tel" maxLength={20} onChange={e => editarTienda({ whatsapp: e.target.value })} />
         </label>

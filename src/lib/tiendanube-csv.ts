@@ -12,17 +12,21 @@ const COLUMNAS = [
 
 const MAX_PRODUCTOS = 500; // mismo tope que datosValidos en el servidor
 
-/** CSV (RFC 4180): comillas, comas y saltos de línea dentro de una celda; ignora el BOM. */
+/** Excel en español guarda el CSV con «;» y Tiendanube con «,»: se usa el que más aparece en la primera línea (fuera de comillas no importa: es solo la cabecera). */
+const separadorDe = (s: string) => { const l = s.split(/\r?\n/, 1)[0]; return l.split(';').length > l.split(',').length ? ';' : ','; };
+
+/** CSV (RFC 4180): comillas, separador `,` o `;` y saltos de línea dentro de una celda; ignora el BOM. */
 export function leerCsv(texto: string): string[][] {
   const filas: string[][] = [];
   let fila: string[] = [], celda = '', entre = false;
   const s = texto.charCodeAt(0) === 0xfeff ? texto.slice(1) : texto; // BOM de Excel
+  const sep = separadorDe(s);
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
     if (entre) {
       if (c === '"' && s[i + 1] === '"') { celda += '"'; i++; } else if (c === '"') entre = false; else celda += c;
     } else if (c === '"') entre = true;
-    else if (c === ',') { fila.push(celda); celda = ''; } else if (c === '\n' || c === '\r') {
+    else if (c === sep) { fila.push(celda); celda = ''; } else if (c === '\n' || c === '\r') {
       if (c === '\r' && s[i + 1] === '\n') i++;
       fila.push(celda); filas.push(fila); fila = []; celda = '';
     } else celda += c;
@@ -85,6 +89,8 @@ export interface ResultadoImportacion {
 
 const clave = (s: string) => sinTildes(s).toLowerCase().trim();
 const NUMERO = /^\d+(\.\d+)?$/;
+/** Excel en español escribe 8500,50: se lee como 8500.50. (Con miles, «8.500», no se adivina: se avisa del error.) */
+const decimal = (v: string) => (/^\d+,\d+$/.test(v) ? v.replace(',', '.') : v);
 
 interface VarianteCsv { valores: string[]; precio?: number; stock?: number | null; sku?: string }
 
@@ -120,14 +126,14 @@ export function importarCsv(texto: string, actuales: Producto[]): ResultadoImpor
     const nombre = cel(idx.nombre).slice(0, 80);
     if (primera && !actual && !nombre) { errores.push(`Fila ${fila}: "${id}" es nuevo y no tiene Nombre.`); return; }
 
-    const crudoPrecio = cel(idx.precio);
+    const crudoPrecio = decimal(cel(idx.precio));
     if (crudoPrecio && !NUMERO.test(crudoPrecio)) { errores.push(`Fila ${fila}: Precio inválido "${crudoPrecio}" (número con punto decimal, sin $).`); return; }
     if (primera && !actual && !crudoPrecio) { errores.push(`Fila ${fila}: "${id}" es nuevo y no tiene Precio.`); return; }
-    const crudoPromo = cel(idx.promo);
+    const crudoPromo = decimal(cel(idx.promo));
     if (crudoPromo && !NUMERO.test(crudoPromo)) { errores.push(`Fila ${fila}: Precio promocional inválido "${crudoPromo}" (número con punto decimal, sin $).`); return; }
     const crudoStock = cel(idx.stock);
     if (crudoStock && crudoStock !== '-' && !/^\d+$/.test(crudoStock)) { errores.push(`Fila ${fila}: Stock inválido "${crudoStock}" (entero, vacío o "-").`); return; }
-    const crudoPeso = cel(idx.peso);
+    const crudoPeso = decimal(cel(idx.peso));
     if (crudoPeso && !NUMERO.test(crudoPeso)) { errores.push(`Fila ${fila}: Peso inválido "${crudoPeso}" (kilos con punto decimal).`); return; }
 
     // ¿Esta fila describe una variante? Sí si trae algún valor de propiedad.

@@ -48,6 +48,8 @@ export interface Tienda {
   /** Interruptores: la tienda funciona completa con ambos apagados. */
   hero3d: boolean;
   camara: boolean;
+  /** Texto del mensaje de WhatsApp del pedido, con {nombre}, {numero}, {detalle}, {envio} y {total}. Sin texto, rige el mensaje de siempre. */
+  plantillaPedido?: string;
 }
 
 export interface Datos {
