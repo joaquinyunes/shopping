@@ -1,6 +1,7 @@
 name: Respaldo semanal de la base
-# Requiere el secreto MONGODB_URI (y MONGODB_DB si no es "casanido") en Settings > Secrets > Actions: lo carga la dueña, no está en el repo.
-# El archivo tiene datos personales de clientas: el repositorio tiene que ser privado y el artefacto dura 30 días.
+# Requiere los secretos MONGODB_URI (y MONGODB_DB si no es "casanido") y BACKUP_PASSPHRASE (una frase larga y única) en Settings > Secrets > Actions: los carga la dueña, no están en el repo.
+# El archivo tiene datos personales de clientas, así que NUNCA se sube en claro: se cifra con AES-256 antes (los artefactos de un repo público los baja cualquiera).
+# Si falta BACKUP_PASSPHRASE el trabajo falla en vez de subir sin cifrar.
 on:
   schedule:
     - cron: "0 6 * * 1"
@@ -19,14 +20,21 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Respaldar
+      - name: Respaldar y cifrar
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
-        run: node scripts/backup.mjs backups
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "Falta el secreto BACKUP_PASSPHRASE: no se sube un respaldo sin cifrar"; exit 1; }
+          node scripts/backup.mjs backups
+          for f in backups/*.ndjson.gz; do
+            openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass env:BACKUP_PASSPHRASE -in "$f" -out "$f.enc"
+            rm "$f"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: respaldo-casa-nido
-          path: backups/*.ndjson.gz
+          path: backups/*.ndjson.gz.enc
           retention-days: 30
           if-no-files-found: error

@@ -29,19 +29,25 @@ export async function exportar(db: Db, ruta: string): Promise<Record<string, num
 
 /** Carga un respaldo. Si la base de destino ya tiene datos, se niega salvo `forzar` (que los reemplaza). */
 export async function importar(db: Db, ruta: string, opciones: { forzar?: boolean } = {}): Promise<Record<string, number>> {
-  const hay = (await Promise.all(COLECCIONES.map(c => db.collection(c).estimatedDocumentCount()))).some(n => n > 0);
-  if (hay && !opciones.forzar) throw new Error(`La base «${db.databaseName}» ya tiene datos. Restaurá en una base vacía o usá --forzar para reemplazarlos.`);
-  if (hay) await Promise.all(COLECCIONES.map(c => db.collection(c).deleteMany({})));
+  const leer = () => createInterface({ input: createReadStream(ruta).pipe(createGunzip()), crlfDelay: Infinity });
+  // Primera pasada: se lee y valida TODO el archivo antes de tocar la base (un archivo cortado o corrupto no deja la base vacía).
   const cuenta: Record<string, number> = {};
-  const lote: Record<string, Document[]> = {};
-  const volcar = async (c: string) => { if (lote[c]?.length) { await db.collection(c).insertMany(lote[c]); lote[c] = []; } };
-  const rl = createInterface({ input: createReadStream(ruta).pipe(createGunzip()), crlfDelay: Infinity });
-  for await (const linea of rl) {
+  for await (const linea of leer()) {
     if (!linea) continue;
     const { c, d } = JSON.parse(linea) as { c: string; d: Document };
     if (!(COLECCIONES as readonly string[]).includes(c)) throw new Error(`Colección inesperada en el respaldo: ${c}`);
-    (lote[c] ??= []).push(BSON.EJSON.deserialize(d, { relaxed: false }) as Document);
+    BSON.EJSON.deserialize(d, { relaxed: false });
     cuenta[c] = (cuenta[c] ?? 0) + 1;
+  }
+  const hay = (await Promise.all(COLECCIONES.map(c => db.collection(c).estimatedDocumentCount()))).some(n => n > 0);
+  if (hay && !opciones.forzar) throw new Error(`La base «${db.databaseName}» ya tiene datos. Restaurá en una base vacía o usá --forzar para reemplazarlos.`);
+  if (hay) await Promise.all(COLECCIONES.map(c => db.collection(c).deleteMany({})));
+  const lote: Record<string, Document[]> = {};
+  const volcar = async (c: string) => { if (lote[c]?.length) { await db.collection(c).insertMany(lote[c]); lote[c] = []; } };
+  for await (const linea of leer()) {
+    if (!linea) continue;
+    const { c, d } = JSON.parse(linea) as { c: string; d: Document };
+    (lote[c] ??= []).push(BSON.EJSON.deserialize(d, { relaxed: false }) as Document);
     if (lote[c].length >= 100) await volcar(c);
   }
   for (const c of Object.keys(lote)) await volcar(c);

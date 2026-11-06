@@ -1,11 +1,18 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, scryptSync, timingSafeEqual } from 'node:crypto';
 
 // Sesión de la dueña: un token firmado con vencimiento. Se guarda solo en la pestaña del navegador.
-// El secreto sale de SESION_SECRET (o, si no está, de ADMIN_PASSWORD): al cambiar la contraseña todas las sesiones dejan de valer.
+// La clave de firma se deriva con scrypt (lento a propósito, para que un token capturado no permita adivinar la contraseña sin conexión) de ADMIN_PASSWORD,
+// ADMIN_TOTP_SECRET y SESION_SECRET juntos: con el segundo paso prendido, saber la contraseña no alcanza para fabricar una sesión.
+// Al cambiar cualquiera de los tres, todas las sesiones dejan de valer.
 
 export const DURACION_SESION_MS = 8 * 3_600_000;
 
-const secreto = () => createHash('sha256').update(`sesion:${process.env.SESION_SECRET ?? process.env.ADMIN_PASSWORD ?? ''}`).digest();
+let derivada: { fuente: string; clave: Buffer } | undefined;
+function secreto(): Buffer {
+  const fuente = [process.env.ADMIN_PASSWORD, process.env.ADMIN_TOTP_SECRET, process.env.SESION_SECRET].map(v => v ?? '').join('\0');
+  if (derivada?.fuente !== fuente) derivada = { fuente, clave: scryptSync(fuente, 'casa-nido-sesion', 32) }; // una vez por instancia
+  return derivada.clave;
+}
 const firma = (cuerpo: string) => createHmac('sha256', secreto()).update(cuerpo).digest('base64url');
 
 export function firmarSesion(ahora = Date.now()): { token: string; expira: number } {

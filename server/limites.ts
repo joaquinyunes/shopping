@@ -27,6 +27,11 @@ export async function contar(db: Db, clave: string, ventanaMs: number, ahora = n
   return fila!.n;
 }
 
+/** Borra el contador (por ejemplo, tras un ingreso correcto). */
+export async function reiniciar(db: Db, clave: string): Promise<void> {
+  await (await coleccion(db)).deleteOne({ _id: clave });
+}
+
 /** Valor actual del contador sin sumar. */
 export async function valorDe(db: Db, clave: string, ahora = new Date()): Promise<number> {
   return (await (await coleccion(db)).findOne({ _id: clave, expira: { $gt: ahora } }))?.n ?? 0;

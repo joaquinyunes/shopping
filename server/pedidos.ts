@@ -160,7 +160,18 @@ export async function guardarPedido({ client, db }: Conexion, armado: { items: I
 export const MAX_PENDIENTES_POR_ORIGEN = 5;
 
 /** Huella de la IP: alcanza para contar pedidos del mismo origen sin guardar el dato personal. */
-export const huellaDeOrigen = (ip: string) => createHash('sha256').update(`${process.env.MONGODB_DB ?? 'casanido'}:${ip}`).digest('hex').slice(0, 24);
+/** Quien tiene una red IPv6 tiene un /64 entero de direcciones: se cuenta por red (los primeros 64 bits), no por dirección. IPv4 (y ::ffff:a.b.c.d) queda igual. */
+export function redDeIp(ip: string): string {
+  const mapeada = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapeada) return mapeada[1];
+  if (!ip.includes(':')) return ip;
+  const [cabeza, cola = ''] = ip.toLowerCase().split('::');
+  const a = cabeza ? cabeza.split(':') : [], b = cola ? cola.split(':') : [];
+  const grupos = ip.includes('::') ? [...a, ...Array(Math.max(0, 8 - a.length - b.length)).fill('0'), ...b] : a;
+  return `${grupos.slice(0, 4).map(g => g.replace(/^0+(?=.)/, '')).join(':')}::/64`;
+}
+
+export const huellaDeOrigen = (ip: string) => createHash('sha256').update(`${process.env.MONGODB_DB ?? 'casanido'}:${redDeIp(ip)}`).digest('hex').slice(0, 24);
 
 /** Valida, calcula todo con el catálogo y el cotizador del servidor y guarda el pedido descontando stock en una transacción. */
 export async function registrarPedido(cx: Conexion, raw: unknown, proveedor: EnviosProvider, ip?: string): Promise<Pedido> {

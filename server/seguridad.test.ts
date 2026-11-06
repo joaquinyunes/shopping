@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diferencias } from './auditoria';
 import { parsearJson, tieneOperadores } from './http';
+import { huellaDeOrigen, redDeIp } from './pedidos';
 import { DURACION_SESION_MS, firmarSesion, sesionValida } from './sesion';
 import { base32Codificar, base32Decodificar, codigoDePaso, generarSecreto, pasoDe, pasoValido, uriOtpauth } from './totp';
 import type { Producto } from '../src/tipos';
@@ -70,6 +71,21 @@ describe('operadores de Mongo en el JSON', () => {
     expect(() => parsearJson(Buffer.from('{"x":{"$gt":0}}'))).toThrow(/Datos inválidos/);
     expect(() => parsearJson(Buffer.from('{roto'))).toThrow(/JSON inválido/);
     expect(parsearJson(Buffer.from('{"x":1}'))).toEqual({ x: 1 });
+  });
+});
+
+describe('origen de una conexión', () => {
+  it('IPv4 y ::ffff:IPv4 es la misma dirección; IPv6 se cuenta por red /64', () => {
+    expect(redDeIp('203.0.113.7')).toBe('203.0.113.7');
+    expect(redDeIp('::ffff:203.0.113.7')).toBe('203.0.113.7');
+    expect(redDeIp('2001:db8:abcd:12:aaaa:bbbb:cccc:dddd')).toBe('2001:db8:abcd:12::/64');
+    expect(redDeIp('2001:0DB8:abcd:0012::1')).toBe('2001:db8:abcd:12::/64');
+    expect(redDeIp('2001:db8::1')).toBe('2001:db8:0:0::/64');
+  });
+  it('dos direcciones de la misma red /64 dan la misma huella; otra red, otra huella', () => {
+    expect(huellaDeOrigen('2001:db8:abcd:12::1')).toBe(huellaDeOrigen('2001:db8:abcd:12:ffff:ffff:ffff:ffff'));
+    expect(huellaDeOrigen('2001:db8:abcd:12::1')).not.toBe(huellaDeOrigen('2001:db8:abcd:13::1'));
+    expect(huellaDeOrigen('203.0.113.7')).not.toBe(huellaDeOrigen('203.0.113.8'));
   });
 });
 

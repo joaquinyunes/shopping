@@ -10,7 +10,8 @@ El archivo (`casanido-AAAA-MM-DD.ndjson.gz`) tiene **datos personales de clienta
 ```bash
 MONGODB_URI="mongodb+srv://..." node scripts/backup.mjs        # deja backups/casanido-<fecha>.ndjson.gz
 ```
-Automático: `.github/workflows/backup.yml` corre los lunes a las 06:00 UTC y deja el archivo como artefacto 30 días (secreto `MONGODB_URI` en GitHub; repo privado). Se puede lanzar a mano desde la pestaña Actions.
+Automático: `.github/workflows/backup.yml` corre los lunes a las 06:00 UTC y deja el archivo **cifrado** (AES-256, `.ndjson.gz.enc`) como artefacto 30 días. Secretos en GitHub: `MONGODB_URI` y `BACKUP_PASSPHRASE` (frase larga y única que guardás en tu gestor de contraseñas: sin ella el respaldo no se puede abrir). Si falta la frase, el trabajo falla en vez de subir sin cifrar: el repo hoy es público y cualquiera puede bajar los artefactos. Se puede lanzar a mano desde la pestaña Actions.
+Descifrar: `openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:BACKUP_PASSPHRASE -in casanido-2026-11-03.ndjson.gz.enc -out casanido-2026-11-03.ndjson.gz`.
 
 ## Restaurar
 ```bash
@@ -30,7 +31,7 @@ Sin `--forzar` el script se niega a escribir sobre una base con datos.
 Hasta que se haga la prueba en Atlas, el respaldo está probado con el mismo motor pero no con la base de producción.
 
 ## Si se pierde la base
-1. Descargar el último artefacto de Actions → `respaldo-casa-nido`.
+1. Descargar el último artefacto de Actions → `respaldo-casa-nido` y descifrarlo (arriba).
 2. Restaurar en una base nueva (arriba), verificar que el último número de pedido coincida con lo que ven en WhatsApp.
 3. Apuntar `MONGODB_DB` a la nueva y redeploy.
 Se pierde como máximo una semana de pedidos (los que entraron después del último respaldo): por eso el pedido también llega por WhatsApp, que es el segundo registro.

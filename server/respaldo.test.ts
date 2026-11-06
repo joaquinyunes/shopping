@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -56,6 +57,21 @@ conMongo('respaldo y restauración de la base', () => {
     await expect(importar(db, archivo)).rejects.toThrow(/ya tiene datos/);
     expect(await importar(db, archivo, { forzar: true })).toEqual({ pedidos: 1 });
     expect(await db.collection('pedidos').countDocuments()).toBe(1);
+  });
+
+  it('un archivo cortado no borra nada aunque se use --forzar', async () => {
+    const buenos = join(carpeta, 'bueno.ndjson.gz');
+    const db = cliente.db('respaldo_tres');
+    await db.collection('pedidos').insertMany([{ _id: 1 as never, total: 1 }, { _id: 2 as never, total: 2 }]);
+    await exportar(db, buenos);
+    const roto = join(carpeta, 'roto.ndjson.gz');
+    writeFileSync(roto, readFileSync(buenos).subarray(0, 12)); // se cortó la descarga
+    await expect(importar(db, roto, { forzar: true })).rejects.toThrow();
+    expect(await db.collection('pedidos').countDocuments()).toBe(2);
+    const ajeno = join(carpeta, 'ajeno.ndjson.gz');
+    writeFileSync(ajeno, gzipSync('{"c":"usuarios","d":{"_id":1}}\n'));
+    await expect(importar(db, ajeno, { forzar: true })).rejects.toThrow(/inesperada/);
+    expect(await db.collection('pedidos').countDocuments()).toBe(2);
   });
 
   it('guarda solo las colecciones que importan', () => {

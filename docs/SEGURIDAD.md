@@ -1,6 +1,6 @@
 # Seguridad de Casa Nido — informe del 03/11/2026
 
-Método: revisión con la skill `security-and-hardening` (modelo de amenazas + lista de verificación), pruebas automáticas (199 tests, 40 contra un MongoDB real con replica set), escaneo de todo el historial de git, `npm audit`, y la política CSP probada en navegador sobre el build de producción (ficha, cámara, carrito, recorrido 3D, panel, páginas legales).
+Método: revisión con la skill `security-and-hardening` y una segunda revisión independiente por un agente aparte (modelo de amenazas + lista de verificación), pruebas automáticas (199 tests, 40 contra un MongoDB real con replica set), escaneo de todo el historial de git, `npm audit`, y la política CSP probada en navegador sobre el build de producción (ficha, cámara, carrito, recorrido 3D, panel, páginas legales).
 No es una auditoría externa ni una prueba de penetración. Qué **no** se verificó está al final.
 
 ## 1. Modelo de amenazas (resumen)
@@ -38,6 +38,18 @@ No es una auditoría externa ni una prueba de penetración. Qué **no** se verif
 | 4 | Estilos en línea permitidos en la CSP | Media | Corregido (ver S2) |
 | 5 | Cuerpos JSON con operadores de Mongo llegaban a los validadores | Baja (los validan por tipo) | Corregido: rechazo central |
 | 6 | Contraseña de ejemplo aceptable en producción | Media | Corregido (≥ 12 y no de ejemplo en Vercel) |
+
+## 3b. Revisión independiente (subagente, 06/11/2026) y correcciones
+Una segunda revisión, hecha por un agente aparte sin haber escrito el código, encontró seis problemas reales; todos corregidos con test:
+| # | Hallazgo | Corrección |
+|---|---|---|
+| 1 | Con solo la contraseña se podía fabricar una sesión (la firma salía de la contraseña) y saltarse el TOTP | La clave de firma se deriva con scrypt de contraseña + `ADMIN_TOTP_SECRET` + `SESION_SECRET`; test: una sesión firmada solo con la contraseña es rechazada cuando hay segundo paso |
+| 2 | El bloqueo de 5 fallos se esquivaba mandando pedidos en paralelo (leía el contador antes de sumar) | Cada intento se cuenta de forma atómica **antes** de verificar; un ingreso correcto reinicia; test con 15 pedidos simultáneos: 5 prueban, 10 reciben 429 |
+| 3 | Con un bloque IPv6 /64 se rotaba la dirección en cada intento | El origen se cuenta por red /64 (y `::ffff:a.b.c.d` = IPv4); test |
+| 4 | El respaldo semanal se subía en claro como artefacto de un repo **público** | Se cifra con AES-256 antes de subir; el trabajo falla si falta `BACKUP_PASSPHRASE`. **Además conviene pasar el repo a privado (👤)** |
+| 5 | Restaurar con `--forzar` borraba antes de validar el archivo | Se lee y valida todo el archivo antes de tocar la base; test con archivo cortado y con colección ajena |
+| 6 | `/api/csp` escribía texto del atacante con saltos de línea en el log | Se quitan saltos de línea |
+Queda aceptado: no hay contador global de fallos (bloquearía a la dueña ante un ataque distribuido); la huella de origen lleva como sal solo el nombre de la base.
 
 ## 4. Decisiones y riesgos aceptados
 - **La sesión vive en `sessionStorage`, no en cookie `HttpOnly`.** El panel también se sirve desde otro dominio (la copia estática en Render) y la API es de Vercel: una cookie `SameSite=Lax` no viajaría. Lo compensan la CSP sin scripts en línea, que el código no usa `innerHTML`, que la sesión dura 8 h, que se puede cerrar en todos los dispositivos y que con TOTP robar la contraseña no alcanza. Si el panel pasa a un solo dominio, conviene una cookie `HttpOnly; Secure; SameSite=Lax`.

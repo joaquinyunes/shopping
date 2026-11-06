@@ -4,6 +4,7 @@ import { MongoClient } from 'mongodb';
 import { hayMongod, levantarReplicaSet } from './mongo-local';
 import type { Req, Res } from './http';
 import { codigoDePaso, generarSecreto, pasoDe } from './totp';
+import { firmarSesion } from './sesion';
 
 // Pruebas de las funciones de api/ contra un MongoDB real (replica set local de un nodo). Se saltean si no hay binario de mongod.
 const conMongo = hayMongod() ? describe : describe.skip;
@@ -317,6 +318,24 @@ conMongo('api/ contra MongoDB con replica set', () => {
       expect((await llamar(pedidos, 'GET', undefined, { ...admin, 'x-forwarded-for': '203.0.113.50' })).estado).toBe(429); // ni con la clave buena
       expect((await entrar({}, '203.0.113.50')).estado).toBe(429);
       expect((await entrar({}, '203.0.113.51')).estado).toBe(200);
+    });
+
+    it('pedidos en paralelo no esquivan el bloqueo: solo 5 llegan a probar una clave', async () => {
+      const estados = (await Promise.all(Array.from({ length: 15 }, (_, i) => llamar(pedidos, 'GET', undefined, { 'x-admin-clave': `adivino-${i}`, 'x-forwarded-for': '203.0.113.77' })))).map(r => r.estado);
+      expect(estados.filter(e => e === 401)).toHaveLength(5);
+      expect(estados.filter(e => e === 429)).toHaveLength(10);
+    });
+
+    it('un ingreso correcto reinicia la cuenta de intentos', async () => {
+      for (let i = 0; i < 4; i++) await llamar(pedidos, 'GET', undefined, { 'x-admin-clave': 'mala', 'x-forwarded-for': '203.0.113.78' });
+      expect((await entrar({}, '203.0.113.78')).estado).toBe(200);
+      for (let i = 0; i < 4; i++) expect((await llamar(pedidos, 'GET', undefined, { 'x-admin-clave': 'mala', 'x-forwarded-for': '203.0.113.78' })).estado).toBe(401);
+    });
+
+    it('con segundo paso, saber la contraseña no alcanza para fabricar una sesión', async () => {
+      const falsa = firmarSesion().token; // firmada solo con la contraseña, como la armaría quien la conoce
+      process.env.ADMIN_TOTP_SECRET = generarSecreto();
+      expect((await llamar(pedidos, 'GET', undefined, { authorization: `Bearer ${falsa}`, 'x-forwarded-for': '203.0.113.79' })).estado).toBe(401);
     });
 
     it('cerrar todas las sesiones corta las anteriores; una nueva sí vale', async () => {
