@@ -6,3 +6,4 @@ _viejo
 .claude/settings.local.json
 *.log
 backups/
+dist-demo

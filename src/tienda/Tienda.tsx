@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { esDemo } from '../entorno';
 import { destacadosDe, idDeRuta, rutaFicha } from '../lib/tienda-vista';
 import type { Datos } from '../tipos';
 import { Ambientes } from './Ambientes';
@@ -53,6 +54,7 @@ export function Tienda({ datos }: { datos: Datos }) {
 
   return (
     <>
+      {esDemo && <p className="cartel-demo" role="note"><strong>DEMO</strong> · Tienda de demostración con datos de ejemplo: los pedidos no son reales.</p>}
       <Barra tienda={datos.tienda} cuenta={carrito.cuenta} busqueda={busqueda} alBuscar={t => { setBusqueda(t); setFiltro('Todos'); }} alAbrirCarrito={() => setCarritoAbierto(true)} />
       <main>
         <Portada tienda={datos.tienda} destacado={portada} alAgregar={agregarDesdeAfuera} />

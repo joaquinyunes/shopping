@@ -1,11 +1,12 @@
 import type { Datos } from '../tipos';
 import { normalizarDatos } from './normalizar';
+import { esDemo } from '../entorno';
 import { DATOS_INICIALES } from './seed';
 
 /** Dirección de la API (MongoDB Atlas detrás). Vacía = el mismo sitio; la copia en Render apunta a Vercel. */
 export const API_URL: string = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 /** En producción hay API; en desarrollo la tienda funciona en modo demo: los cambios quedan solo en este navegador. */
-export const hayNube = import.meta.env.PROD || Boolean(API_URL);
+export const hayNube = !esDemo && (import.meta.env.PROD || Boolean(API_URL)); // la demo nunca habla con una base
 
 const CLAVE_LOCAL = 'casa-nido:tienda';
 

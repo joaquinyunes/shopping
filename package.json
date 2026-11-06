@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src scripts api server",
     "test": "vitest run",
-    "recortar": "node scripts/recortar.mjs"
+    "recortar": "node scripts/recortar.mjs",
+    "build:demo": "tsc --noEmit && vite build --mode demo --outDir dist-demo"
   },
   "dependencies": {
     "gsap": "^3.15.0",

@@ -8,7 +8,10 @@ Front en Vercel (o estático en Render), API en `api/` (funciones de Vercel) y b
 |---|---|---|---|
 | `MONGODB_URI` | Vercel (API) | Sí | Cadena de conexión de Atlas. Tiene que ser de un cluster **replica set** (todos los de Atlas lo son, también el gratis M0): los pedidos usan transacciones para descontar stock. |
 | `MONGODB_DB` | Vercel (API) | No | Nombre de la base. Por defecto `casanido`. |
-| `ADMIN_PASSWORD` | Vercel (API) | Sí | Clave de la dueña para `/#/admin` (catálogo, fotos, pedidos). |
+| `ADMIN_PASSWORD` | Vercel (API) | Sí | Clave de la dueña para `/#/admin`. **12+ caracteres** y no una de ejemplo (si no, el login responde 503 en Vercel). |
+| `ADMIN_TOTP_SECRET` | Vercel (API) | Muy recomendada | Segundo paso del admin (código de 6 dígitos de una app). Generarlo con `node scripts/totp-nuevo.mjs`. Sin ella el panel queda solo con contraseña. |
+| `SESION_SECRET` | Vercel (API) | Recomendada | Cadena larga al azar; junto con la contraseña y el secreto TOTP firma las sesiones del panel. |
+| `ANDREANI_*`, `MICORREO_*`, `OCA_*`, `ENVIO_CP_ORIGEN`, `ENVIO_CAJA_CM` | Vercel (API) | No | Correos reales para cotizar envíos (sin verificar contra el servicio real; ver `docs/ENVIOS.md`). |
 | `ORIGENES_PERMITIDOS` | Vercel (API) | Solo si el front está en otro dominio | Sitios que pueden llamar a la API, separados por coma (ej. la copia estática en Render). Sin ella, solo el mismo sitio. |
 | `VITE_API_URL` | Front en build (Render / `.env` local) | Solo si el front no está en el mismo dominio que la API | Dirección de la API (ej. la de Vercel). Sin ella, en desarrollo el admin funciona en modo demo. |
 | `ENVIO_GRATIS_DESDE` | Vercel (API) | No | Monto en pesos desde el cual la cotización de envío da $0. Sin ella, nunca es gratis. |
